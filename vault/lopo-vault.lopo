@@ -1,0 +1,101 @@
+define server = createServer();
+define SecretModel = defineModel("Secrets", {
+    "key_alias": { "type": "string", "required": true },   
+    "cipher_payload": { "type": "string", "required": true },
+    "clearance_level": { "type": "string", "required": true },
+    "updated_by": { "type": "string", "required": true }
+});
+define VaultAuditModel = defineModel("VaultAudits", {
+    "actor": { "type": "string", "required": true },
+    "action_type": { "type": "string", "required": true }, 
+    "key_alias": { "type": "string", "required": true },
+    "timestamp": { "type": "string", "required": true }
+});
+define totalSecrets = len(SecretModel.find({}));
+if (totalSecrets == 0) {
+    SecretModel.create({ "key_alias": "PRODUCTION_DATABASE_URL", "cipher_payload": "enc_v2_db://root:unbreakable_hash@cluster0", "clearance_level": "ROOT", "updated_by": "System-Kernel" });
+    SecretModel.create({ "key_alias": "STRIPE_LIVE_API_TOKEN", "cipher_payload": "enc_v2_sk_live_51Nz...", "clearance_level": "OPERATOR", "updated_by": "System-Kernel" });
+}
+server.post("/api/vault/secrets/list", func(req, res) {
+    define clientRole = req.body.role ?? "AUDITOR";
+    define rawSecrets = SecretModel.find({});
+    define secureOutput = [];
+    
+    define i = 0;
+    while (i < len(rawSecrets)) {
+        define sec = rawSecrets[i];
+        define masking = "••••••••••••••••";
+       
+        if (clientRole == "ROOT") {
+            masking = sec.cipher_payload;
+        } else {
+            if (clientRole == "OPERATOR" && sec.clearance_level != "ROOT") {
+                masking = sec.cipher_payload; 
+            }
+        }
+
+        secureOutput = append(secureOutput, {
+            "id": sec.id,
+            "key_alias": sec.key_alias,
+            "display_payload": masking,
+            "clearance_level": sec.clearance_level,
+            "updated_by": sec.updated_by
+        });
+        i = i + 1;
+    }
+    return secureOutput;
+});
+
+server.post("/api/vault/secrets/rotate", func(req, res) {
+    define alias = trim(req.body.key_alias ?? "");
+    define rawPayload = trim(req.body.secret_string ?? "");
+    define level = req.body.clearance_level ?? "OPERATOR";
+    define operatorIdentity = req.body.operator_name ?? "anonymous_node";
+
+    if (alias == "" || rawPayload == "") {
+        return { "success": false, "error": "Incomplete configuration payload inputs provided." };
+    }
+
+    define existing = SecretModel.find({ "key_alias": alias });
+    if (len(existing) > 0) {
+        SecretModel.update(existing[0].id, {
+            "cipher_payload": rawPayload,
+            "clearance_level": level,
+            "updated_by": operatorIdentity
+        });
+        
+        VaultAuditModel.create({
+            "actor": operatorIdentity,
+            "action_type": "ROTATION",
+            "key_alias": alias,
+            "timestamp": toStr(timestamp())
+        });
+        return { "success": true, "action": "ROTATED" };
+    } else {
+        SecretModel.create({
+            "key_alias": alias,
+            "cipher_payload": rawPayload,
+            "clearance_level": level,
+            "updated_by": operatorIdentity
+        });
+
+        VaultAuditModel.create({
+            "actor": operatorIdentity,
+            "action_type": "ACCESS",
+            "key_alias": alias,
+            "timestamp": toStr(timestamp())
+        });
+        return { "success": true, "action": "PROVISIONED" };
+    }
+});
+server.get("/api/vault/compliance-audit", func(req, res) {
+    define logMatrix = VaultAuditModel.find({});
+    return logMatrix;
+});
+server.get("/", func(req, res) { return render("vault-directory.html", {}); });
+server.get("/rotate", func(req, res) { return render("vault-rotate.html", {}); });
+server.get("/compliance", func(req, res) { return render("vault-compliance.html", {}); });
+
+server.listen(3015, func(port) {
+    show("Lopo Identity Vault Daemon active on port 3015");
+});
