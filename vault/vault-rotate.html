@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lopo Vault - Key Rotation Core</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #05070f; color: #e2e8f0; margin: 0; padding: 2rem; }
+        .app-container { max-width: 1200px; margin: 0 auto; }
+        nav { background: #0f111a; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #1e293b; }
+        nav a { color: #64748b; text-decoration: none; margin-right: 1.5rem; font-weight: 600; }
+        nav a.active { color: #38bdf8; }
+        .form-panel { max-width: 600px; background: #0f111a; border: 1px solid #1e293b; border-radius: 8px; padding: 2rem; margin: 0 auto; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: #94a3b8; margin-bottom: 6px; }
+        input, select, button { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; background: #1a1d29; color: white; box-sizing: border-box; margin-bottom: 20px; font-size: 0.95rem; }
+        input:focus, select:focus { border-color: #38bdf8; outline: none; }
+        button { background: #38bdf8; color: #05070f; font-weight: 700; border: none; cursor: pointer; letter-spacing: 0.5px; transition: background 0.2s; }
+        button:hover { background: #7dd3fc; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <nav>
+            <a href="/">Secrets Registry</a>
+            <a href="/rotate" class="active">Secret Rotation Console</a>
+            <a href="/compliance">Compliance Records</a>
+        </nav>
+
+        <div class="form-panel">
+            <h2 style="margin-top:0; border-bottom:1px solid #1e293b; padding-bottom:10px; color:#fff;">Inject/Modify Cipher Variable</h2>
+            <form id="vaultRotationForm" onsubmit="executeRotationTask(event)">
+                <label>Identifier Variable Path (Key Alias)</label>
+                <input type="text" id="vAlias" placeholder="e.g., PAYMENT_GATEWAY_PASSPHRASE" required>
+
+                <label>Sensitive Plaintext String Value (Will wrap into cipher vectors)</label>
+                <input type="text" id="vPayload" placeholder="e.g., live_secret_7x9923..." required>
+
+                <label>Minimum Required Clearance Threshold Scope</label>
+                <select id="vLevel">
+                    <option value="OPERATOR">OPERATOR (Standard Read/Write Team Access)</option>
+                    <option value="ROOT">ROOT (Strict Administrative Lockdown Tier)</option>
+                </select>
+
+                <label>Signature Credentials (Your Identity)</label>
+                <input type="text" id="vSign" placeholder="e.g., ops-engineer-04" required>
+
+                <button type="submit">Commit Cryptographic Rotation Configuration</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function executeRotationTask(e) {
+            e.preventDefault();
+            const payload = {
+                key_alias: document.getElementById('vAlias').value,
+                secret_string: document.getElementById('vPayload').value,
+                clearance_level: document.getElementById('vLevel').value,
+                operator_name: document.getElementById('vSign').value
+            };
+
+            const res = await fetch('/api/vault/secrets/rotate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const statusMessage = await res.json();
+            
+            if (statusMessage.success) {
+                alert(`Transaction completed successfully! Variable state: ${statusMessage.action}`);
+                window.location.href = "/";
+            } else {
+                alert(`Error during runtime transmission: ${statusMessage.error}`);
+            }
+        }
+    </script>
+</body>
+</html>

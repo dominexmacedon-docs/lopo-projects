@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lopo Vault - Directory Manager</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #05070f; color: #e2e8f0; margin: 0; padding: 2rem; }
+        .app-container { max-width: 1200px; margin: 0 auto; }
+        nav { background: #0f111a; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #1e293b; }
+        nav a { color: #64748b; text-decoration: none; margin-right: 1.5rem; font-weight: 600; }
+        nav a.active { color: #38bdf8; }
+        .security-banner { background: rgba(56, 189, 248, 0.05); border: 1px dashed #38bdf8; padding: 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        select { background: #0f111a; color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .data-grid { background: #0f111a; border: 1px solid #1e293b; border-radius: 8px; padding: 1.5rem; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+        th, td { padding: 14px; border-bottom: 1px solid #1e293b; }
+        th { color: #475569; font-size: 0.8rem; text-transform: uppercase; font-weight: 700; }
+        code { font-family: monospace; background: #1e293b; padding: 3px 8px; border-radius: 4px; font-size: 0.9rem; }
+        .badge { font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 700; }
+        .badge.ROOT { background: #ef4444; color: white; }
+        .badge.OPERATOR { background: #f59e0b; color: #05070f; }
+        .badge.AUDITOR { background: #10b981; color: white; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <nav>
+            <a href="/" class="active">Secrets Registry</a>
+            <a href="/rotate">Secret Rotation Console</a>
+            <a href="/compliance">Compliance Records</a>
+        </nav>
+
+        <div class="security-banner">
+            <div>
+                <h3 style="margin:0; font-weight:600;">Active Session Clearance Key</h3>
+                <p style="margin:4px 0 0 0; font-size:0.85rem; color:#475569;">Data payloads decrypt dynamically based on chosen identity matrix profile tier parameters.</p>
+            </div>
+            <select id="roleScopeSelector" onchange="fetchVaultRegistry()">
+                <option value="AUDITOR">AUDITOR (Read Minimal)</option>
+                <option value="OPERATOR">OPERATOR (Standard Read/Write)</option>
+                <option value="ROOT">ROOT (Global Decryption Bypass)</option>
+            </select>
+        </div>
+
+        <div class="data-grid">
+            <h2 style="margin-top:0; font-size:1.3rem;">Protected Internal Resource Pointers</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Alias Identifier String</th>
+                        <th>Cryptographic Value Payload Space</th>
+                        <th>Clearance Cap</th>
+                        <th>Last Mutator Node</th>
+                    </tr>
+                </thead>
+                <tbody id="secretsTableTarget">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", fetchVaultRegistry);
+
+        async function fetchVaultRegistry() {
+            const chosenRole = document.getElementById('roleScopeSelector').value;
+            const res = await fetch('/api/vault/secrets/list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role: chosenRole })
+            });
+            const data = await res.json();
+            const tbody = document.getElementById('secretsTableTarget');
+            tbody.innerHTML = '';
+
+            data.forEach(sec => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong style="color:#f8fafc;">${sec.key_alias}</strong></td>
+                    <td><code style="color:${sec.display_payload.startsWith('•') ? '#64748b' : '#38bdf8'}">${sec.display_payload}</code></td>
+                    <td><span class="badge ${sec.clearance_level}">${sec.clearance_level}</span></td>
+                    <td style="color:#94a3b8; font-size:0.9rem;">${sec.updated_by}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>

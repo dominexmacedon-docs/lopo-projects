@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lopo Vault - Security Logs</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #05070f; color: #e2e8f0; margin: 0; padding: 2rem; }
+        .app-container { max-width: 1200px; margin: 0 auto; }
+        nav { background: #0f111a; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #1e293b; }
+        nav a { color: #64748b; text-decoration: none; margin-right: 1.5rem; font-weight: 600; }
+        nav a.active { color: #38bdf8; }
+        .audit-card { background: #0f111a; border: 1px solid #1e293b; border-radius: 8px; padding: 1.5rem; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        th, td { padding: 12px; border-bottom: 1px solid #1e293b; }
+        th { color: #475569; font-size: 0.8rem; text-transform: uppercase; }
+        .action-tag { font-family: monospace; font-weight: 700; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; }
+        .action-tag.ROTATION { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .action-tag.ACCESS { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <nav>
+            <a href="/">Secrets Registry</a>
+            <a href="/rotate">Secret Rotation Console</a>
+            <a href="/compliance" class="active">Compliance Records</a>
+        </nav>
+
+        <div class="audit-card">
+            <h2 style="margin-top:0; font-size:1.3rem; color:#f1f5f9;">Immutable Access & Mutation Event Log</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Event Executed By</th>
+                        <th>Action Context Type</th>
+                        <th>Target Secret Handle Reference</th>
+                        <th style="text-align: right;">Epoch Timestamp Frame</th>
+                    </tr>
+                </thead>
+                <tbody id="complianceLogsTarget">
+                    <tr>
+                        <td colspan="4" style="color:#475569; font-style:italic; text-align:center;">Scanning security event records...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadAuditTelemetry);
+
+        async function loadAuditTelemetry() {
+            const res = await fetch('/api/vault/compliance-audit');
+            const logs = await res.json();
+            const tbody = document.getElementById('complianceLogsTarget');
+            tbody.innerHTML = '';
+
+            if(logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="color:#475569; font-style:italic; text-align:center; padding:20px;">System operational logs remain blank. No variables modulated yet.</td></tr>`;
+                return;
+            }
+            logs.reverse().forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span style="font-family:monospace; color:#e2e8f0;">${log.actor}</span></td>
+                    <td><span class="action-tag ${log.action_type}">${log.action_type}</span></td>
+                    <td><strong style="color:#94a3b8;">${log.key_alias}</strong></td>
+                    <td style="text-align: right; font-family: monospace; color: #475569;">${log.timestamp}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
