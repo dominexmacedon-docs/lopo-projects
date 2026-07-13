@@ -1,0 +1,113 @@
+define server = createServer();
+define AccountModel = defineModel("Accounts", {
+    "code": { "type": "string", "required": true },      
+    "name": { "type": "string", "required": true },     
+    "type": { "type": "string", "required": true },     
+    "balance": { "type": "number", "required": true }
+});
+define JournalModel = defineModel("Journals", {
+    "reference": { "type": "string", "required": true },   
+    "description": { "type": "string", "required": true },
+    "posted_at": { "type": "string", "required": true }
+});
+define LedgerLineModel = defineModel("LedgerLines", {
+    "journal_id": { "type": "string", "required": true },
+    "account_code": { "type": "string", "required": true },
+    "entry_type": { "type": "string", "required": true },  
+    "amount": { "type": "number", "required": true }
+});
+define currentCount = len(AccountModel.find({}));
+if (currentCount == 0) {
+    AccountModel.create({ "code": "1010", "name": "Operating Cash", "type": "ASSET", "balance": 10000 });
+    AccountModel.create({ "code": "1200", "name": "Accounts Receivable", "type": "ASSET", "balance": 0 });
+    AccountModel.create({ "code": "2010", "name": "Accounts Payable", "type": "LIABILITY", "balance": 0 });
+    AccountModel.create({ "code": "4010", "name": "SaaS Product Revenue", "type": "REVENUE", "balance": 0 });
+}
+server.get("/api/ledger/accounts", func(req, res) {
+    return AccountModel.find({});
+});
+server.post("/api/ledger/accounts/create", func(req, res) {
+    define code = trim(req.body.code ?? "");
+    define name = trim(req.body.name ?? "");
+    define type = req.body.type ?? "";
+
+    if (code == "" || name == "" || type == "") {
+        return { "success": false, "error": "All account parameters are required." };
+    }
+
+    define existing = AccountModel.find({ "code": code });
+    if (len(existing) > 0) {
+        return { "success": false, "error": "Account code already configured." };
+    }
+
+    define newAcc = AccountModel.create({ "code": code, "name": name, "type": type, "balance": 0 });
+    return { "success": true, "account": newAcc };
+});
+server.post("/api/ledger/journals/post", func(req, res) {
+    define ref = trim(req.body.reference ?? "");
+    define desc = trim(req.body.description ?? "");
+    define lines = req.body.lines ?? []; 
+    if (ref == "" || len(lines) < 2) {
+        return { "success": false, "error": "Invalid payload configuration. Minimum of 2 balancing entry lines required." };
+    }
+    define totalDebits = 0;
+    define totalCredits = 0;
+    define idx = 0;
+
+    while (idx < len(lines)) {
+        define line = lines[idx];
+        define amt = toFloat(line.amount ?? "0");
+        if (line.entry_type == "DEBIT") { totalDebits = totalDebits + amt; }
+        if (line.entry_type == "CREDIT") { totalCredits = totalCredits + amt; }
+        idx = idx + 1;
+    }
+
+    if (totalDebits != totalCredits) {
+        return { "success": false, "error": "Imbalanced transaction entry block. Total Debits must perfectly equal Total Credits." };
+    }
+    define journal = JournalModel.create({
+        "reference": ref,
+        "description": desc,
+        "posted_at": toStr(timestamp())
+    });
+    idx = 0;
+    while (idx < len(lines)) {
+        define currentLine = lines[idx];
+        define amt = toFloat(currentLine.amount ?? "0");
+
+        LedgerLineModel.create({
+            "journal_id": journal.id,
+            "account_code": currentLine.account_code,
+            "entry_type": currentLine.entry_type,
+            "amount": amt
+        });
+        define targetAccArr = AccountModel.find({ "code": currentLine.account_code });
+        if (len(targetAccArr) > 0) {
+            define acc = targetAccArr[0];
+            define originalBal = acc.balance;
+            define modifier = 0;
+            if (acc.type == "ASSET" || acc.type == "EXPENSE") {
+                modifier = currentLine.entry_type == "DEBIT" ? amt : (0 - amt);
+            } else {
+                modifier = currentLine.entry_type == "CREDIT" ? amt : (0 - amt);
+            }
+
+            AccountModel.update(acc.id, { "balance": originalBal + modifier });
+        }
+        idx = idx + 1;
+    }
+
+    return { "success": true, "journal_id": journal.id };
+});
+server.get("/api/ledger/audit", func(req, res) {
+    define journals = JournalModel.find({});
+    define lines = LedgerLineModel.find({});
+    return { "journals": journals, "lines": lines };
+});
+server.get("/", func(req, res) { return render("ledger-accounts.html", {}); });
+server.get("/post", func(req, res) { return render("ledger-post.html", {}); });
+server.get("/audit", func(req, res) { return render("ledger-audit.html", {}); });
+
+server.listen(3010, func(port) {
+    show("Lopo Immutable Financial Ledger Module operational on port 3010");
+});
