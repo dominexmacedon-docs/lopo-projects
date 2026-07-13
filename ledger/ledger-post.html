@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lopo Ledger - Post Transaction Voucher</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #090d16; color: #f1f5f9; margin: 0; padding: 2rem; }
+        .wrapper { max-width: 1100px; margin: 0 auto; }
+        nav { background: #111827; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #1f2937; }
+        nav a { color: #94a3b8; text-decoration: none; margin-right: 1.5rem; font-weight: 500; }
+        nav a.active { color: #38bdf8; }
+        .panel { background: #111827; padding: 1.5rem; border-radius: 8px; border: 1px solid #1f2937; margin-bottom: 1.5rem; }
+        .entry-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; margin-bottom: 10px; }
+        input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
+        .btn-post { background: #10b981; color: #090d16; font-weight: 600; border: none; cursor: pointer; width: 100%; margin-top: 1rem; padding: 12px; }
+        .btn-post:hover { background: #34d399; }
+        .balance-indicator { font-family: monospace; font-size: 1.1rem; text-align: right; margin-top: 1rem; color: #fbbf24; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <nav>
+            <a href="/">Chart of Accounts</a>
+            <a href="/post" class="active">Post Journal Entries</a>
+            <a href="/audit">Audit Ledger Trails</a>
+        </nav>
+
+        <h1>Post Balanced Journal Entry Voucher</h1>
+        
+        <div class="panel">
+            <div style="display:grid; grid-template-columns: 1fr 2fr; gap:20px; margin-bottom:1.5rem;">
+                <div>
+                    <label style="display:block; margin-bottom:5px;">Reference Token</label>
+                    <input type="text" id="jRef" placeholder="e.g., INV-2024-001" style="width:100%;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:5px;">Transactional Narrative Description</label>
+                    <input type="text" id="jDesc" placeholder="e.g., Client subscription fulfillment transaction" style="width:100%;">
+                </div>
+            </div>
+
+            <h3 style="border-bottom:1px solid #1f2937; padding-bottom:0.5rem; color:#38bdf8;">Double-Entry Allocation Items</h3>
+            
+            <div id="linesContainer">
+                <div class="entry-row">
+                    <select class="lineAcc" onchange="calculateBalancingMath()"></select>
+                    <select class="lineType" onchange="calculateBalancingMath()"><option value="DEBIT">DEBIT</option><option value="CREDIT">CREDIT</option></select>
+                    <input type="number" class="lineAmt" value="0" step="0.01" oninput="calculateBalancingMath()">
+                </div>
+                <div class="entry-row">
+                    <select class="lineAcc" onchange="calculateBalancingMath()"></select>
+                    <select class="lineType" onchange="calculateBalancingMath()"><option value="CREDIT">CREDIT</option><option value="DEBIT">DEBIT</option></select>
+                    <input type="number" class="lineAmt" value="0" step="0.01" oninput="calculateBalancingMath()">
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <button type="button" onclick="appendLineField()" style="width:auto; background:#475569; color:white; padding:6px 12px; font-size:0.85rem;">+ Add Allocation Row</button>
+            </div>
+
+            <div class="balance-indicator" id="balanceSummary">Debits: $0.00 | Credits: $0.00 (Status: Balanced)</div>
+            <button class="btn-post" onclick="submitVoucher()">Authorize & Post Ledger entry</button>
+        </div>
+    </div>
+
+    <script>
+        let accountsCached = [];
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const res = await fetch('/api/ledger/accounts');
+            accountsCached = await res.json();
+            document.querySelectorAll('.lineAcc').forEach(el => populateSelectOptions(el));
+            calculateBalancingMath();
+        });
+
+        function populateSelectOptions(selectEl) {
+            selectEl.innerHTML = '';
+            accountsCached.forEach(acc => {
+                selectEl.innerHTML += `<option value="${acc.code}">${acc.code} - ${acc.name} [${acc.type}]</option>`;
+            });
+        }
+
+        function appendLineField() {
+            const row = document.createElement('div');
+            row.className = 'entry-row';
+            row.innerHTML = `
+                <select class="lineAcc" onchange="calculateBalancingMath()"></select>
+                <select class="lineType" onchange="calculateBalancingMath()"><option value="DEBIT">DEBIT</option><option value="CREDIT">CREDIT</option></select>
+                <input type="number" class="lineAmt" value="0" step="0.01" oninput="calculateBalancingMath()">
+            `;
+            document.getElementById('linesContainer').appendChild(row);
+            populateSelectOptions(row.querySelector('.lineAcc'));
+        }
+
+        function calculateBalancingMath() {
+            let debits = 0, credits = 0;
+            const rows = document.querySelectorAll('.entry-row');
+            
+            rows.forEach(r => {
+                const type = r.querySelector('.lineType').value;
+                const amt = parseFloat(r.querySelector('.lineAmt').value || 0);
+                if (type === 'DEBIT') debits += amt;
+                if (type === 'CREDIT') credits += amt;
+            });
+
+            const summary = document.getElementById('balanceSummary');
+            summary.innerText = `Total Debits: $${debits.toFixed(2)} | Total Credits: $${credits.toFixed(2)}`;
+            summary.style.color = (debits.toFixed(2) === credits.toFixed(2)) ? '#34d399' : '#f87171';
+        }
+
+        async function submitVoucher() {
+            const rows = document.querySelectorAll('.entry-row');
+            const lines = [];
+            
+            rows.forEach(r => {
+                lines.push({
+                    account_code: r.querySelector('.lineAcc').value,
+                    entry_type: r.querySelector('.lineType').value,
+                    amount: r.querySelector('.lineAmt').value
+                });
+            });
+
+            const res = await fetch('/api/ledger/journals/post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reference: document.getElementById('jRef').value,
+                    description: document.getElementById('jDesc').value,
+                    lines: lines
+                })
+            });
+
+            const result = await res.json();
+            if(result.success) {
+                alert("Journal entries posted and integrated successfully.");
+                window.location.href = "/audit";
+            } else {
+                alert("Error validating entry: " + result.error);
+            }
+        }
+    </script>
+</body>
+</html>

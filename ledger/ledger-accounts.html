@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lopo Ledger - Accounts Manager</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #090d16; color: #f1f5f9; margin: 0; padding: 2rem; }
+        .wrapper { max-width: 1100px; margin: 0 auto; }
+        nav { background: #111827; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #1f2937; }
+        nav a { color: #94a3b8; text-decoration: none; margin-right: 1.5rem; font-weight: 500; }
+        nav a.active { color: #38bdf8; }
+        .grid { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }
+        .panel { background: #111827; padding: 1.5rem; border-radius: 8px; border: 1px solid #1f2937; height: fit-content; }
+        input, select, button { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: white; box-sizing: border-box; }
+        button { background: #38bdf8; color: #090d16; font-weight: 600; border: none; cursor: pointer; margin-top: 5px; }
+        button:hover { background: #7dd3fc; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 12px; border-bottom: 1px solid #1f2937; }
+        th { color: #64748b; font-size: 0.85rem; text-transform: uppercase; }
+        .code-tag { font-family: monospace; background: #1e293b; color: #38bdf8; padding: 3px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <nav>
+            <a href="/" class="active">Chart of Accounts</a>
+            <a href="/post">Post Journal Entries</a>
+            <a href="/audit">Audit Ledger Trails</a>
+        </nav>
+
+        <h1>Chart of Accounts Ledger Matrix</h1>
+        <div class="grid">
+            <div class="panel">
+                <h3 style="margin-top:0; color:#38bdf8;">Configure Account Code</h3>
+                <form id="accForm" onsubmit="createAccount(event)">
+                    <label>Account Reference Code</label>
+                    <input type="text" id="accCode" placeholder="e.g., 1050" required>
+                    
+                    <label>Account Name String</label>
+                    <input type="text" id="accName" placeholder="e.g., Petty Cash" required>
+                    
+                    <label>Classification Category</label>
+                    <select id="accType">
+                        <option value="ASSET">ASSET</option>
+                        <option value="LIABILITY">LIABILITY</option>
+                        <option value="EQUITY">EQUITY</option>
+                        <option value="REVENUE">REVENUE</option>
+                        <option value="EXPENSE">EXPENSE</option>
+                    </select>
+                    <button type="submit">Deploy Account Node</button>
+                </form>
+            </div>
+            <div class="panel">
+                <h3 style="margin-top:0;">Active Operational Ledger Nodes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code ID</th>
+                            <th>Descriptive Title</th>
+                            <th>Classification</th>
+                            <th style="text-align: right;">Current Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accountsTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadAccounts);
+
+        async function loadAccounts() {
+            const res = await fetch('/api/ledger/accounts');
+            const accounts = await res.json();
+            const tbody = document.getElementById('accountsTableBody');
+            tbody.innerHTML = '';
+
+            accounts.forEach(acc => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="code-tag">${acc.code}</span></td>
+                    <td style="font-weight:500;">${acc.name}</td>
+                    <td><span style="font-size:0.8rem; opacity:0.8;">${acc.type}</span></td>
+                    <td style="text-align: right; font-family: monospace; color:${acc.balance >= 0 ? '#34d399' : '#f87171'}">$${Number(acc.balance).toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function createAccount(e) {
+            e.preventDefault();
+            const payload = {
+                code: document.getElementById('accCode').value,
+                name: document.getElementById('accName').value,
+                type: document.getElementById('accType').value
+            };
+
+            const res = await fetch('/api/ledger/accounts/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('accForm').reset();
+                loadAccounts();
+            } else {
+                alert(data.error);
+            }
+        }
+    </script>
+</body>
+</html>

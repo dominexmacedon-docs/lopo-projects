@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lopo Ledger - Audit Logs</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #090d16; color: #f1f5f9; margin: 0; padding: 2rem; }
+        .wrapper { max-width: 1100px; margin: 0 auto; }
+        nav { background: #111827; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #1f2937; }
+        nav a { color: #94a3b8; text-decoration: none; margin-right: 1.5rem; font-weight: 500; }
+        nav a.active { color: #38bdf8; }
+        .journal-block { background: #111827; border: 1px solid #1f2937; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
+        .journal-header { display: flex; justify-content: space-between; border-bottom: 1px dashed #334155; padding-bottom: 10px; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 8px 12px; text-align: left; }
+        th { color: #64748b; font-weight: 600; }
+        .debit-cell { text-align: right; font-family: monospace; color: #34d399; width: 120px; }
+        .credit-cell { text-align: right; font-family: monospace; color: #fbbf24; width: 120px; }
+        .indented-item { padding-left: 30px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <nav>
+            <a href="/">Chart of Accounts</a>
+            <a href="/post">Post Journal Entries</a>
+            <a href="/audit" class="active">Audit Ledger Trails</a>
+        </nav>
+
+        <h1>General Ledger Transaction Audit Matrix</h1>
+        <div id="auditTimelineRoot">Loading ledger event stream files...</div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadAuditLogs);
+
+        async function loadAuditLogs() {
+            const res = await fetch('/api/ledger/audit');
+            const data = await res.json();
+            const container = document.getElementById('auditTimelineRoot');
+            container.innerHTML = '';
+
+            if(data.journals.length === 0) {
+                container.innerHTML = `<p style="color:#64748b; font-style:italic;">No historical journal records located inside current engine collection blocks.</p>`;
+                return;
+            }
+            data.journals.reverse().forEach(journal => {
+                const block = document.createElement('div');
+                block.className = 'journal-block';
+                const relatedLines = data.lines.filter(l => l.journal_id === journal.id);
+
+                let rowsHtml = '';
+                relatedLines.forEach(line => {
+                    const isDebit = line.entry_type === 'DEBIT';
+                    rowsHtml += `
+                        <tr>
+                            <td class="${isDebit ? '' : 'indented-item'}">${line.account_code} - Ledger allocation node</td>
+                            <td class="debit-cell">${isDebit ? '$' + Number(line.amount).toFixed(2) : ''}</td>
+                            <td class="credit-cell">${!isDebit ? '$' + Number(line.amount).toFixed(2) : ''}</td>
+                        </tr>
+                    `;
+                });
+
+                block.innerHTML = `
+                    <div class="journal-header">
+                        <div>
+                            <strong style="color:#38bdf8; font-family:monospace;">REF: ${journal.reference}</strong>
+                            <span style="margin-left:15px; color:#94a3b8;">${journal.description}</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:#64748b; font-family:monospace;">Epoch Frame: ${journal.posted_at}</div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Account Specification</th>
+                                <th style="text-align:right;">Debit Amount</th>
+                                <th style="text-align:right;">Credit Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                `;
+                container.appendChild(block);
+            });
+        }
+    </script>
+</body>
+</html>
