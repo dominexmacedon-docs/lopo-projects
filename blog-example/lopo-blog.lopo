@@ -1,0 +1,103 @@
+define app = createServer({ enableWebSockets: true });
+define schema = {
+    title: { type: "string", required: true },
+    slug: { type: "string", required: true },
+    summary: { type: "string", required: true },
+    content: { type: "string", required: true },
+    author: { type: "string", required: true },
+    category: { type: "string", required: false }
+};
+
+define BlogPost = defineModel("BlogPost", schema);
+
+app.get("/", func(req, res) {
+    define posts = BlogPost.find({});
+    return render("lopo-blog.html", { totalPosts: len(posts) });
+});
+
+app.get("/api/posts", func(req, res) {
+    return BlogPost.find({});
+});
+
+app.post("/api/posts", func(req, res) {
+    define payload = req.body;
+    if (isEmpty(payload.title) or isEmpty(payload.content) or isEmpty(payload.author)) {
+        return { success: false, error: "Missing title, content, or author" };
+    }
+    
+    define generatedSlug = lower(replace(payload.title, " ", "-"));
+    
+    define createdPost = BlogPost.create({
+        title: str(payload.title),
+        slug: generatedSlug,
+        summary: payload.summary ? str(payload.summary) : substring(str(payload.content), 0, 120),
+        content: str(payload.content),
+        author: str(payload.author),
+        category: payload.category ? str(payload.category) : "General"
+    });
+    
+    return { success: true, post: createdPost };
+});
+
+app.delete("/api/posts/:id", func(req, res) {
+    define postId = req.params.id;
+    define target = BlogPost.findById(postId);
+    if (not target) {
+        return { success: false, error: "Post identifier not found" };
+    }
+    BlogPost.delete(postId);
+    return { success: true, deletedId: postId };
+});
+
+define liveReaders = [];
+
+app.onWebSocket(func(socket) {
+    push(liveReaders, socket);
+    
+    define notifyCountUpdate = func() {
+        define activeConnections = [];
+        define broadcastPayload = JSONStringify({ event: "reader_count", count: len(liveReaders) });
+        
+        for clientSocket in liveReaders {
+            do {
+                clientSocket.send(broadcastPayload);
+                push(activeConnections, clientSocket);
+            } track {
+                show("Stale reader session dropped during count sync");
+            }
+        }
+        liveReaders = activeConnections;
+    };
+
+    notifyCountUpdate();
+    
+    socket.onMessage(func(messageText) {
+        define activeConnections = [];
+        define broadcastPayload = JSONStringify({ event: "content_mutation", data: messageText });
+        
+        for clientSocket in liveReaders {
+            do {
+                clientSocket.send(broadcastPayload);
+                push(activeConnections, clientSocket);
+            } track {
+                show("Stale socket dropped during global sync feed");
+            }
+        }
+        liveReaders = activeConnections;
+    });
+    
+    socket.onClose(func() {
+        define validSockets = [];
+        for clientSocket in liveReaders {
+            if (clientSocket != socket) {
+                push(validSockets, clientSocket);
+            }
+        }
+        liveReaders = validSockets;
+        notifyCountUpdate();
+    });
+});
+
+app.listen(8080, func(port) {
+    show("Multi-User Publishing Engine & Hub listening safely on port 8080");
+});

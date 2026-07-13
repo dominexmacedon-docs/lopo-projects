@@ -1,0 +1,54 @@
+define server = createServer();
+define MigrationHistoryModel = defineModel("MigrationHistory", {
+    "version": { "type": "string", "required": true },
+    "description": { "type": "string", "required": true },
+    "applied_at": { "type": "string", "required": true }
+});
+server.get("/api/migrations", func(req, res) {
+    define history = MigrationHistoryModel.find({});
+    
+    define currentVersion = "v0.0.0";
+    define maxTimestamp = 0;
+    define i = 0;
+    
+    while (i < len(history)) {
+        define record = history[i];
+        define recordTime = toInt(record.applied_at);
+        if (recordTime > maxTimestamp) {
+            maxTimestamp = recordTime;
+            currentVersion = record.version;
+        }
+        i = i + 1;
+    }
+
+    return {
+        "current_version": currentVersion,
+        "history": history
+    };
+});
+server.post("/api/migrations/run", func(req, res) {
+    define targetVersion = req.body.version ?? "";
+    define description = req.body.description ?? "";
+
+    if (targetVersion == "") {
+        return { "success": false, "error": "Target version version token is required." };
+    }
+    define existing = MigrationHistoryModel.find({ "version": targetVersion });
+    if (len(existing) > 0) {
+        return { "success": false, "error": "Migration has already been executed on this engine." };
+    }
+    MigrationHistoryModel.create({
+        "version": targetVersion,
+        "description": description,
+        "applied_at": toStr(timestamp())
+    });
+
+    return { "success": true, "applied_version": targetVersion };
+});
+server.get("/", func(req, res) {
+    return render("lopo-migration.html", {});
+});
+
+server.listen(3005, func(port) {
+    show("Schema Migration Lifecycle Manager live on port 3005");
+});

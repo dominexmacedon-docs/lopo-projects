@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lopo Routing Architecture Matrix</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #fafafa; color: #171717; margin: 0; padding: 0; display: flex; min-height: 100vh; }
+        .sidebar { width: 240px; background: #111; color: #fff; padding: 2rem 1.5rem; box-sizing: border-box; }
+        .sidebar h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: #737373; margin-top: 0; margin-bottom: 2rem; }
+        .sidebar nav a { display: block; color: #a3a3a3; text-decoration: none; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem; cursor: pointer; }
+        .sidebar nav a:hover { color: #fff; background: #262626; }
+        .sidebar nav a.active { color: #fff; background: #2563eb; }
+        .main-stage { flex: 1; padding: 3rem; background: #ffffff; }
+        .view-pane { border: 1px dashed #e5e5e5; border-radius: 12px; padding: 2rem; min-height: 300px; background: #fafafa; }
+        code { font-family: monospace; background: #f4f4f5; padding: 3px 6px; border-radius: 4px; color: #dc2626; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Lopo Router Shell</h2>
+        <nav>
+            <a onclick="navigateTo('/')" id="link-home">Home Matrix</a>
+            <a onclick="navigateTo('/dashboard')" id="link-dashboard">Management Panel</a>
+            <a onclick="navigateTo('/settings')" id="link-settings">System Profiles</a>
+        </nav>
+    </div>
+    <div class="main-stage">
+        <h1 style="margin-top: 0; font-size: 1.75rem; font-weight: 800; margin-bottom: 1.5rem;">Single Page Application Router Pipeline</h1>
+        
+        <div class="view-pane" id="routerContentWindow">
+        </div>
+    </div>
+
+    <script>
+        const views = {
+            '/': `
+                <h2 style="margin-top:0;">Welcome to Core Matrix</h2>
+                <p>This path point represents the entry state root context. The current fallback capture system resolves this dynamic environment seamlessly.</p>
+                <p>Try clicking another sidebar menu node to watch the browser address bar update state parameters without requesting a hard refresh sequence from the engine.</p>
+            `,
+            '/dashboard': `
+                <h2 style="margin-top:0;">Management Monitoring Interface</h2>
+                <p>Active live telemetric modules are monitored within this dashboard path context.</p>
+                <div style="background:#fff; border:1px solid #e5e5e5; padding:15px; border-radius:6px; margin-top:15px;">
+                    <strong>System Status Hook:</strong> <span style="color:#16a34a;">Operational Operational Routing State</span>
+                </div>
+            `,
+            '/settings': `
+                <h2 style="margin-top:0;">Global System Configuration Profiles</h2>
+                <p>Modify structural system operations, token limits, and engine bindings inside this control layout section.</p>
+                <p>Active route parameter validation intercept pattern: <code>SPA_HISTORY_FALLBACK_ON</code></p>
+            `,
+            '404': `
+                <h2 style="margin-top:0; color:#dc2626;">404 - Missing Context Path</h2>
+                <p>The routing engine path layer could not locate a view layout mapping node matching that token address.</p>
+                <button onclick="navigateTo('/')" style="background:#2563eb; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:500;">Return to Safety</button>
+            `
+        };
+        window.addEventListener('popstate', dispatchRoute);
+        document.addEventListener('DOMContentLoaded', dispatchRoute);
+
+        function dispatchRoute() {
+            const explicitPath = window.location.pathname;
+            const targetContainer = document.getElementById('routerContentWindow');
+            const renderedHtml = views[explicitPath] || views['404'];
+            targetContainer.innerHTML = renderedHtml;
+            document.querySelectorAll('nav a').forEach(el => el.classList.remove('active'));
+            
+            let linkId = 'link-home';
+            if (explicitPath === '/dashboard') linkId = 'link-dashboard';
+            if (explicitPath === '/settings') linkId = 'link-settings';
+            
+            const activeLink = document.getElementById(linkId);
+            if (activeLink) activeLink.classList.add('active');
+        }
+
+        function navigateTo(routeTokenPath) {
+            window.history.pushState({}, "", routeTokenPath);
+            dispatchRoute();
+        }
+    </script>
+</body>
+</html>

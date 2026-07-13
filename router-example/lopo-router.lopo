@@ -1,0 +1,16 @@
+define server = createServer();
+server.get("/api/route-info", func(req, res) {
+    return {
+        "status": "online",
+        "engine": "Lopo Router v2.0",
+        "timestamp": toStr(timestamp())
+    };
+});
+
+server.get("/*", func(req, res) {
+    return render("lopo-router.html", {});
+});
+
+server.listen(3006, func(port) {
+    show("Dynamic Router Gateway Engine live on port 3006");
+});

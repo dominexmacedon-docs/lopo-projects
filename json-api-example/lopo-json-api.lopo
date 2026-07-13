@@ -1,0 +1,70 @@
+define server = createServer();
+
+define TaskModel = defineModel("Tasks", {
+    "title": { "type": "string", "required": true },
+    "completed": { "type": "boolean", "required": true }
+});
+
+server.get("/api/tasks", func(req, res) {
+    define allTasks = TaskModel.find({});
+    return allTasks; 
+});
+
+server.post("/api/tasks", func(req, res) {
+    define title = req.body.title ?? "";
+    
+    if (title == "") {
+        return { "error": "Task title cannot be empty" };
+    }
+
+    define newTask = TaskModel.create({
+        "title": title,
+        "completed": false
+    });
+
+    return { "success": true, "task": newTask };
+});
+
+server.post("/api/tasks/toggle", func(req, res) {
+    define taskId = req.body.id ?? "";
+    
+    if (taskId == "") {
+        return { "error": "Missing task ID" };
+    }
+
+    define tasks = TaskModel.find({ "id": taskId });
+    if (len(tasks) == 0) {
+        return { "error": "Task not found" };
+    }
+
+    define task = tasks[0];
+    define nextStatus = true;
+    if (task.completed == true) {
+        nextStatus = false;
+    }
+
+    TaskModel.update(taskId, {
+        "completed": nextStatus
+    });
+
+    return { "success": true, "completed": nextStatus };
+});
+
+server.post("/api/tasks/delete", func(req, res) {
+    define taskId = req.body.id ?? "";
+    
+    if (taskId == "") {
+        return { "error": "Missing task ID" };
+    }
+
+    TaskModel.delete(taskId);
+    return { "success": true };
+});
+
+server.get("/", func(req, res) {
+    return render("lopo-json-api.html", {});
+});
+
+server.listen(3000, func(port) {
+    show("JSON API gateway listening on port 3000");
+});

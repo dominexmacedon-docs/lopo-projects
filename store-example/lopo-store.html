@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lopo Flat KV-Store</title>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background: #fafafa; color: #1f2937; margin: 0; padding: 2rem; }
+        .wrapper { max-width: 800px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; }
+        .panel { background: white; padding: 1.5rem; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; font-size: 1.2rem; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 1px solid #f3f4f6; }
+        label { display: block; font-size: 0.85rem; font-weight: 500; margin-top: 1rem; color: #4b5563; }
+        input[type="text"] { width: 100%; padding: 8px 12px; margin-top: 4px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 6px; font-family: monospace; }
+        button { background: #111827; color: white; border: none; padding: 10px 14px; border-radius: 6px; font-weight: 500; cursor: pointer; width: 100%; margin-top: 1.2rem; }
+        button:hover { background: #1f2937; }
+        .kv-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+        .kv-table th, .kv-table td { text-align: left; padding: 10px; border-bottom: 1px solid #f3f4f6; }
+        .kv-table th { font-size: 0.8rem; text-transform: uppercase; color: #6b7280; font-weight: 600; }
+        .kv-table td code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; }
+        .btn-del { background: none; border: none; color: #ef4444; font-size: 0.85rem; cursor: pointer; padding: 0; text-align: right; width: auto; margin: 0; }
+        .btn-del:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <h1 style="max-width: 800px; margin: 0 auto 1.5rem auto; font-size: 1.6rem; font-weight: 700;">lopo-store runtime setup</h1>
+
+    <div class="wrapper">
+        <div class="panel" style="height: fit-content;">
+            <h2>Commit Key-Value Pair</h2>
+            <form id="kvForm" onsubmit="savePair(event)">
+                <label for="kvKey">Storage Key</label>
+                <input type="text" id="kvKey" placeholder="app.theme_mode" required>
+
+                <label for="kvValue">Target Value String</label>
+                <input type="text" id="kvValue" placeholder="dark_optimized" required>
+
+                <button type="submit">Commit Registry Entry</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h2>Active Registry Map</h2>
+            <table class="kv-table">
+                <thead>
+                    <tr>
+                        <th>Key Path</th>
+                        <th>Mapped Data Value</th>
+                        <th style="text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="storeRoot">
+                    <tr>
+                        <td colspan="3" style="color:#6b7280; font-style:italic;">Initializing core tables...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadStore);
+
+        async function loadStore() {
+            try {
+                const res = await fetch('/api/store/all');
+                const items = await res.json();
+                const tbody = document.getElementById('storeRoot');
+                tbody.innerHTML = '';
+
+                if(items.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" style="color:#9ca3af; font-style:italic; text-align:center; padding: 20px;">No operational variables registered.</td></tr>`;
+                    return;
+                }
+
+                items.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><code>${item.key}</code></td>
+                        <td>${item.value}</td>
+                        <td style="text-align: right;"><button class="btn-del" onclick="deleteKey('${item.key}')">Wipe</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Failed to dump Lopo store environment configurations.", err);
+            }
+        }
+
+        async function savePair(e) {
+            e.preventDefault();
+            const keyInput = document.getElementById('kvKey');
+            const valInput = document.getElementById('kvValue');
+
+            await fetch('/api/store/set', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: keyInput.value, value: valInput.value })
+            });
+
+            keyInput.value = '';
+            valInput.value = '';
+            loadStore();
+        }
+
+        async function deleteKey(targetKey) {
+            if(!confirm(`Purge parameter "${targetKey}" from active registry?`)) return;
+            
+            await fetch('/api/store/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: targetKey })
+            });
+            loadStore();
+        }
+    </script>
+</body>
+</html>

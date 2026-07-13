@@ -1,0 +1,61 @@
+define server = createServer();
+define StoreModel = defineModel("KeyValueStore", {
+    "key": { "type": "string", "required": true },
+    "value": { "type": "string", "required": true }
+});
+
+server.get("/api/store/get", func(req, res) {
+    define targetKey = req.query.key ?? "";
+    if (targetKey == "") {
+        return { "error": "Missing key parameter" };
+    }
+
+    define records = StoreModel.find({ "key": targetKey });
+    if (len(records) == 0) {
+        return { "key": targetKey, "value": null };
+    }
+
+    return { "key": targetKey, "value": records[0].value };
+});
+
+server.post("/api/store/set", func(req, res) {
+    define key = req.body.key ?? "";
+    define value = req.body.value ?? "";
+
+    if (key == "") {
+        return { "error": "Key identifier cannot be empty" };
+    }
+    key = trim(key);
+
+    define existing = StoreModel.find({ "key": key });
+    if (len(existing) > 0) {
+        StoreModel.update(existing[0].id, { "value": toStr(value) });
+        return { "success": true, "action": "updated", "key": key };
+    } else {
+        StoreModel.create({ "key": key, "value": toStr(value) });
+        return { "success": true, "action": "created", "key": key };
+    }
+});
+
+server.get("/api/store/all", func(req, res) {
+    define entries = StoreModel.find({});
+    return entries;
+});
+server.post("/api/store/delete", func(req, res) {
+    define key = req.body.key ?? "";
+    define existing = StoreModel.find({ "key": key });
+    
+    if (len(existing) > 0) {
+        StoreModel.delete(existing[0].id);
+        return { "success": true };
+    }
+    return { "success": false, "error": "Key not found" };
+});
+
+server.get("/", func(req, res) {
+    return render("lopo-store.html", {});
+});
+
+server.listen(3003, func(port) {
+    show("Lopo KV-Store Engine active on port 3003");
+});

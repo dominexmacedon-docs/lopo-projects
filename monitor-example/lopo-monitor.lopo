@@ -1,0 +1,42 @@
+define server = createServer();
+define SessionModel = defineModel("Sessions", {
+    "token": { "type": "string", "required": true },
+    "username": { "type": "string", "required": true }
+});
+
+define TaskModel = defineModel("Tasks", {
+    "title": { "type": "string", "required": true },
+    "completed": { "type": "boolean", "required": true }
+});
+server.get("/api/metrics", func(req, res) {
+    define totalSessions = len(SessionModel.find({}));
+    define allTasks = TaskModel.find({});
+    define totalTasks = len(allTasks);
+    define completedTasks = 0;
+    define i = 0;
+    while (i < totalTasks) {
+        if (allTasks[i].completed == true) {
+            completedTasks = completedTasks + 1;
+        }
+        i = i + 1;
+    }
+    return {
+        "status": "Healthy",
+        "uptime_seconds": timestamp(), 
+        "active_sessions": totalSessions,
+        "database_metrics": {
+            "total_tasks": totalTasks,
+            "completed_tasks": completedTasks,
+            "completion_rate": totalTasks > 0 ? (completedTasks * 100) / totalTasks : 0
+        },
+        "engine_load": "0.45%" 
+    };
+});
+
+server.get("/", func(req, res) {
+    return render("lopo-monitor.html", {});
+});
+
+server.listen(3001, func(port) {
+    show("System Telemetry Monitor active on port 3001");
+});

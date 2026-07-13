@@ -1,0 +1,86 @@
+define server = createServer();
+
+define SessionModel = defineModel("Sessions", {
+    "token": { "type": "string", "required": true },
+    "username": { "type": "string", "required": true }
+});
+
+server.get("/", func(req, res) {
+    define cookieHeader = req.headers.cookie ?? "";
+    if (cookieHeader == "") {
+        return render("login.html", { "error": "" });
+    }
+    define cookiePairs = split(cookieHeader, ";");
+    define token = "";
+    define i = 0;
+    while (i < len(cookiePairs)) {
+        define pair = trim(cookiePairs[i]);
+        if (substring(pair, 0, 14) == "session_token=") {
+            token = substring(pair, 14, len(pair));
+        }
+        i = i + 1;
+    }
+    
+    if (token == "") {
+        return render("login.html", { "error": "" });
+    }
+    
+    define sessions = SessionModel.find({ "token": token });
+    if (len(sessions) == 0) {
+        return render("login.html", { "error": "Session expired or invalid." });
+    }
+
+    define currentSession = sessions[0];
+    return render("dashboard.html", { "username": currentSession.username });
+});
+
+server.post("/login", func(req, res) {
+    define username = req.body.username ?? "";
+    define password = req.body.password ?? "";
+
+    if (username == "" || password == "") {
+        return render("login.html", { "error": "Please provide both username and password." });
+    }
+
+    define token = sha256(username + toStr(timestamp()));
+    
+    SessionModel.create({
+        "token": token,
+        "username": username
+    });
+
+    res.setCookie("session_token", token, { "httpOnly": true, "path": "/" });
+    return "<script>window.location.href='/';</script>";
+});
+
+server.get("/logout", func(req, res) {
+    define cookieHeader = req.headers.cookie ?? "";
+    define cookiePairs = split(cookieHeader, ";");
+    define token = "";
+    define i = 0;
+
+    while (i < len(cookiePairs)) {
+        define pair = cookiePairs[i];
+        if (substring(pair, 0, 14) == "session_token=") {
+            token = substring(pair, 14, len(pair));
+        }
+        if (substring(pair, 0, 15) == " session_token=") {
+            token = substring(pair, 15, len(pair));
+        }
+        i = i + 1;
+    }
+    
+    if (token != "") {
+        define sessions = SessionModel.find({ "token": token });
+        if (len(sessions) > 0) {
+            SessionModel.delete(sessions[0].id);
+        }
+    }
+
+    res.clearCookie("session_token");
+    return "<script>window.location.href='/';</script>";
+});
+
+server.listen(3000, func(port) {
+    show("Authentication server active on port 3000");
+});

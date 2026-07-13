@@ -1,0 +1,79 @@
+define app = createServer({ enableWebSockets: true });
+define schema = {
+    title: { type: "string", required: true },
+    content: { type: "string", required: false },
+    color: { type: "string", required: false },
+    author: { type: "string", required: true }
+};
+
+define StickyNote = defineModel("StickyNote", schema);
+
+app.get("/", func(req, res) {
+    define posts = StickyNote.find({});
+    return render("lopo-board.html", { notesCount: len(posts) });
+});
+
+app.get("/api/notes", func(req, res) {
+    return StickyNote.find({});
+});
+
+app.post("/api/notes", func(req, res) {
+    define payload = req.body;
+    if (isEmpty(payload.title) or isEmpty(payload.author)) {
+        return { success: false, error: "Missing required inputs" };
+    }
+    
+    define createdRecord = StickyNote.create({
+        title: str(payload.title),
+        content: payload.content ? str(payload.content) : "",
+        color: payload.color ? str(payload.color) : "#fef08a",
+        author: str(payload.author)
+    });
+    
+    return { success: true, note: createdRecord };
+});
+
+app.delete("/api/notes/:id", func(req, res) {
+    define noteId = req.params.id;
+    define target = StickyNote.findById(noteId);
+    if (not target) {
+        return { success: false, error: "Note identifier not found" };
+    }
+    StickyNote.delete(noteId);
+    return { success: true, deletedId: noteId };
+});
+
+define liveSockets = [];
+
+app.onWebSocket(func(socket) {
+    push(liveSockets, socket);
+    
+    socket.onMessage(func(messageText) {
+        define activeConnections = [];
+        define broadcastPayload = JSONStringify({ event: "sync_update", data: messageText });
+        
+        for clientSocket in liveSockets {
+            do {
+                clientSocket.send(broadcastPayload);
+                push(activeConnections, clientSocket);
+            } track {
+                show("Stale connection terminated during broadcast packet routing");
+            }
+        }
+        liveSockets = activeConnections;
+    });
+    
+    socket.onClose(func() {
+        define validSockets = [];
+        for clientSocket in liveSockets {
+            if (clientSocket != socket) {
+                push(validSockets, clientSocket);
+            }
+        }
+        liveSockets = validSockets;
+    });
+});
+
+app.listen(8080, func(port) {
+    show("Multi-User Interactive Blackboard Engine listening dynamically on standard port 8080");
+});
