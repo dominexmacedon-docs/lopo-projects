@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lopo Chat Authentication</title>
+    <style>
+        body {
+            font-family: serif;
+            background-color: #ffffff;
+            color: #000000;
+            margin: 20px;
+        }
+        .error {
+            color: #ff0000;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        input {
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Lopo Chat Authentication</h2>
+    
+    <div class="error">{{ error }}</div>
+    
+    <table border="0" cellpadding="10" cellspacing="0">
+        <tr valign="top">
+            <td>
+                <h3>Sign In</h3>
+                <form action="/login" method="POST">
+                    Email Address:<br>
+                    <input type="email" name="email" size="25" required /><br>
+                    
+                    Password:<br>
+                    <input type="password" name="password" size="25" required /><br>
+                    
+                    <input type="submit" value="Log In" />
+                </form>
+            </td>
+            <td style="border-left: 1px solid #000000;">&nbsp;</td>
+            <td>
+                <h3>Create Account</h3>
+                <form action="/signup" method="POST">
+                    Full Name:<br>
+                    <input type="text" name="name" size="25" required /><br>
+                    
+                    Email Address:<br>
+                    <input type="email" name="email" size="25" required /><br>
+                    
+                    Password:<br>
+                    <input type="password" name="password" size="25" required /><br>
+                    
+                    <input type="submit" value="Sign Up" />
+                </form>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

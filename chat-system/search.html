@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lopo Chat - Find Users</title>
+    <style>
+        body { 
+            font-family: serif; 
+            background: #ffffff; 
+            color: #000000; 
+            margin: 20px; 
+        }
+    </style>
+</head>
+<body>
+
+    <p><a href="/home">&lt;-- Back to Dashboard</a></p>
+    
+    <hr size="1" color="#000000" noshade />
+
+    <h2>Search System Directory</h2>
+    
+    <form action="/search" method="GET">
+        Search by name or email account:<br />
+        <input type="text" name="query" size="40" required />
+        <input type="submit" value="Search" />
+    </form>
+    
+    <br />
+    <table width="100%" border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr bgcolor="#e0e0e0">
+                <th align="left">Name</th>
+                <th align="left">Email Target Address</th>
+                <th align="left">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ resultsRows }}
+        </tbody>
+    </table>
+
+</body>
+</html>
