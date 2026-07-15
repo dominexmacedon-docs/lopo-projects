@@ -1,0 +1,173 @@
+define usersFile = "users.json";
+define messagesFile = "messages.json";
+if (not exists(usersFile)) {
+    writeFile(usersFile, "[]");
+}
+if (not exists(messagesFile)) {
+    writeFile(messagesFile, "[]");
+}
+define server = createServer();
+server.get("/auth", func(req, res) {
+    return render("authenticate.html", { error: "" });
+});
+server.post("/login", func(req, res) {
+    define email = req.body.email;
+    define password = req.body.password;
+    define users = readJSON(usersFile);
+    
+    define matchedUser = null;
+    for u in users {
+        if (u.email == email and u.password == password) {
+            matchedUser = u;
+        }
+    }
+    
+    if (matchedUser == null) {
+        return render("authenticate.html", { error: "Invalid email credentials or password matching failed." });
+    }
+    req.session.userEmail = matchedUser.email;
+    req.session.userName = matchedUser.name;
+    
+    res.setCookie("user_session", matchedUser.email, { path: "/", maxAge: 3600 });
+    return "<script>window.location.href='/home';</script>";
+});
+server.post("/signup", func(req, res) {
+    define name = req.body.name;
+    define email = req.body.email;
+    define password = req.body.password;
+    define users = readJSON(usersFile);
+    for u in users {
+        if (u.email == email) {
+            return render("authenticate.html", { error: "Email already registered. Proceed to login instead." });
+        }
+    }
+    
+    define newUser = { name: name, email: email, password: password };
+    push(users, newUser);
+    writeJSON(usersFile, users);
+    
+    req.session.userEmail = email;
+    req.session.userName = name;
+    
+    res.setCookie("user_session", email, { path: "/", maxAge: 3600 });
+    return "<script>window.location.href='/home';</script>";
+});
+server.get("/home", func(req, res) {
+    define currentUser = req.session.userEmail;
+    if (currentUser == null) {
+        currentUser = req.cookies.user_session;
+    }
+    if (currentUser == null) {
+        return "<script>window.location.href='/auth';</script>";
+    }
+    
+    define allUsers = readJSON(usersFile);
+    define dynamicUserRows = "";
+    
+    for u in allUsers {
+        if (u.email != currentUser) {
+            define nameVal = u.name;
+            define emailVal = u.email;
+            dynamicUserRows = dynamicUserRows + "<tr><td>" + nameVal + "</td><td>" + emailVal + "</td><td><a href='/chat?receiver=" + emailVal + "' class='btn btn-chat'>Chat</a></td></tr>";
+        }
+    }
+    
+    return render("home.html", { currentUser: currentUser, userRows: dynamicUserRows });
+});
+server.get("/search", func(req, res) {
+    define currentUser = req.session.userEmail;
+    if (currentUser == null) {
+        currentUser = req.cookies.user_session;
+    }
+    if (currentUser == null) {
+        return "<script>window.location.href='/auth';</script>";
+    }
+    
+    define searchQuery = req.query.query;
+    define allUsers = readJSON(usersFile);
+    define dynamicResultsRows = "";
+    
+    if (searchQuery != null and searchQuery != "") {
+        define cleanQuery = lower(searchQuery);
+        
+        for u in allUsers {
+            if (u.email != currentUser) {
+                define currentName = lower(u.name);
+                define currentEmail = lower(u.email);
+                
+                if (includes(currentName, cleanQuery) or includes(currentEmail, cleanQuery)) {
+                    define user_name = u.name;
+                    define user_email = u.email;
+                    dynamicResultsRows = dynamicResultsRows + "<tr><td>" + user_name + "</td><td>" + user_email + "</td><td><a href='/chat?receiver=" + user_email + "' class='btn btn-chat'>Chat</a></td></tr>";
+                }
+            }
+        }
+    } else {
+        for u in allUsers {
+            if (u.email != currentUser) {
+                define user_name = u.name;
+                define user_email = u.email;
+                dynamicResultsRows = dynamicResultsRows + "<tr><td>" + user_name + "</td><td>" + user_email + "</td><td><a href='/chat?receiver=" + user_email + "' class='btn btn-chat'>Chat</a></td></tr>";
+            }
+        }
+    }
+    
+    return render("search.html", { resultsRows: dynamicResultsRows });
+});
+server.get("/chat", func(req, res) {
+    define currentUser = req.session.userEmail;
+    if (currentUser == null) {
+        currentUser = req.cookies.user_session;
+    }
+    if (currentUser == null) {
+        return "<script>window.location.href='/auth';</script>";
+    }
+    
+    define targetReceiver = req.query.receiver;
+    define allMessages = readJSON(messagesFile);
+    define chatTimelineMarkup = "";
+    
+    for msg in allMessages {
+        if ((msg.sender == currentUser and msg.receiver == targetReceiver) or (msg.sender == targetReceiver and msg.receiver == currentUser)) {
+            define senderLabel = "You";
+            define alignmentClass = "msg-sender";
+            if (msg.sender == targetReceiver) {
+                senderLabel = targetReceiver;
+                alignmentClass = "msg-receiver";
+            }
+            
+            chatTimelineMarkup = chatTimelineMarkup + "<div class='msg-card " + alignmentClass + "'><strong>" + senderLabel + ":</strong> " + msg.message + "</div>";
+        }
+    }
+    
+    return render("chat.html", { targetReceiver: targetReceiver, conversationTimeline: chatTimelineMarkup });
+});
+server.post("/send", func(req, res) {
+    define currentUser = req.session.userEmail;
+    if (currentUser == null) {
+        currentUser = req.cookies.user_session;
+    }
+    if (currentUser == null) {
+        return "<script>window.location.href='/auth';</script>";
+    }
+    
+    define targetReceiver = req.body.receiver;
+    define messageText = req.body.message;
+    
+    if (messageText != null and messageText != "") {
+        define allMessages = readJSON(messagesFile);
+        define newMessageEntry = {
+            sender: currentUser,
+            receiver: targetReceiver,
+            message: messageText,
+            timestamp: timestamp()
+        };
+        push(allMessages, newMessageEntry);
+        writeJSON(messagesFile, allMessages);
+    }
+    
+    return "<script>window.location.href='/chat?receiver=" + targetReceiver + "';</script>";
+});
+
+show("Server actively listening on local environment: http://localhost:8080/auth");
+server.listen(8080);
