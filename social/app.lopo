@@ -1,0 +1,121 @@
+define User = defineModel("users", {
+  username: { required: true, type: "string" },
+  email: { required: true, type: "string" },
+  password: { required: true, type: "string" }
+});
+
+define Post = defineModel("posts", {
+  author: { required: true, type: "string" },
+  title: { required: true, type: "string" },
+  content: { required: true, type: "string" },
+  image: { required: false, type: "string" }
+});
+
+define app = createServer({
+  staticDir: "public"
+});
+
+app.get("/", (req, res) => {
+  define currentUser = req.session.user;
+  if (isEmpty(currentUser)) {
+    return res.send("<script>window.location.href='/login';</script>");
+  } else {
+    return res.send("<script>window.location.href='/feed';</script>");
+  }
+});
+
+app.get("/login", (req, res) => {
+  return res.send(render("authenticate.html", { title: "Authenticate" }));
+});
+
+app.post("/signup", (req, res) => {
+  define username = req.body.username;
+  define email = req.body.email;
+  define password = req.body.password;
+
+  if (isEmpty(username) or isEmpty(email) or isEmpty(password)) {
+    return { success: false, message: "All fields are required." };
+  }
+
+  define existingUsers = User.find({ email: email });
+  if (len(existingUsers) > 0) {
+    return { success: false, message: "User with this email already exists." };
+  }
+
+  User.create({ username: username, email: email, password: password });
+  req.session.user = username;
+ 
+  return { success: true, redirect: "/feed" };
+});
+
+app.post("/login", (req, res) => {
+  define email = req.body.email;
+  define password = req.body.password;
+
+  if (isEmpty(email) or isEmpty(password)) {
+    return { success: false, message: "All fields are required." };
+  }
+
+  define matches = User.find({ email: email, password: password });
+  if (len(matches) > 0) {
+    req.session.user = matches[0].username;
+    return { success: true, redirect: "/feed" };
+  } else {
+    return { success: false, message: "Invalid email or password." };
+  }
+});
+
+app.get("/feed", (req, res) => {
+  define currentUser = req.session.user;
+  if (isEmpty(currentUser)) {
+    return res.send("<script>window.location.href='/login';</script>");
+  }
+
+  define allPosts = Post.find({});
+  return res.send(render("feed.html", {
+    user: currentUser,
+    posts: JSONStringify(allPosts)
+  }));
+});
+
+app.post("/post", (req, res) => {
+  define currentUser = req.session.user;
+  define title = req.body.title;
+  define content = req.body.content;
+
+  if (isEmpty(currentUser)) {
+    return { success: false, message: "Unauthorized. Please log in." };
+  }
+
+  if (isEmpty(title) or isEmpty(content)) {
+    return { success: false, message: "Title and content cannot be empty." };
+  }
+
+  define imageUrl = "";
+  if (req.files and req.files.image) {
+    define uploadedFile = req.files.image;
+    define filename = timestamp() + "_" + uploadedFile.filename;
+    define destinationPath = "public/uploads/" + filename;
+    
+    await req.storage.saveLocal(uploadedFile, destinationPath);
+    imageUrl = "/uploads/" + filename;
+  }
+
+  Post.create({ 
+    author: currentUser, 
+    title: title, 
+    content: content,
+    image: imageUrl 
+  });
+  
+  return { success: true };
+});
+
+app.get("/logout", (req, res) => {
+  req.session.user = null;
+  return res.send("<script>window.location.href='/login';</script>");
+});
+
+app.listen(3000, (port) => {
+  show("Server is running on http://localhost:3000");
+});
