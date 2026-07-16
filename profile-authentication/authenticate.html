@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px; }
+        .card h2 { margin-top: 0; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #666; }
+        .form-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .btn { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background-color: #0056b3; }
+        .error { color: red; font-size: 0.9em; margin-bottom: 15px; }
+        .toggle-text { margin-top: 15px; font-size: 0.85em; text-align: center; }
+        .toggle-text a { color: #007bff; text-decoration: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 id="form-title">Login</h2>
+    <div class="error">{{ error }}</div>
+    <form id="login-form" action="/login" method="POST">
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" required>
+        </div>
+        <button type="submit" class="btn">Log In</button>
+    </form>
+
+    <form id="signup-form" action="/signup" method="POST" style="display: none;">
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="name" required>
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" required>
+        </div>
+        <button type="submit" class="btn">Sign Up</button>
+    </form>
+
+    <div class="toggle-text">
+        <span id="toggle-prompt">Don't have an account?</span> 
+        <a id="toggle-btn" onclick="toggleAuth()">Sign Up</a>
+    </div>
+</div>
+
+<script>
+    function toggleAuth() {
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const title = document.getElementById('form-title');
+        const prompt = document.getElementById('toggle-prompt');
+        const btn = document.getElementById('toggle-btn');
+
+        if (loginForm.style.display === "none") {
+            loginForm.style.display = "block";
+            signupForm.style.display = "none";
+            title.innerText = "Login";
+            prompt.innerText = "Don't have an account?";
+            btn.innerText = "Sign Up";
+        } else {
+            loginForm.style.display = "none";
+            signupForm.style.display = "block";
+            title.innerText = "Sign Up";
+            prompt.innerText = "Already have an account?";
+            btn.innerText = "Log In";
+        }
+    }
+</script>
+
+</body>
+</html>
