@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 400px; margin: 60px auto; padding: 20px; }
+    .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab-buttons button { flex: 1; padding: 10px; cursor: pointer; border: 1px solid #0070f3; background: #fff; color: #0070f3; border-radius: 4px; }
+    .tab-buttons button.active { background: #0070f3; color: #fff; }
+    form { display: flex; flex-direction: column; gap: 12px; }
+    input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    button[type="submit"] { padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .error { color: red; margin-bottom: 10px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="tab-buttons">
+      <button id="loginTabBtn" class="active" onclick="switchTab('login')">Login</button>
+      <button id="signupTabBtn" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <div id="errorMessage" class="error"></div>
+    <form id="loginForm" onsubmit="handleAuth(event, '/login')">
+      <input type="email" id="loginEmail" placeholder="Email" required />
+      <input type="password" id="loginPassword" placeholder="Password" required />
+      <button type="submit">Log In</button>
+    </form>
+    <form id="signupForm" style="display: none;" onsubmit="handleAuth(event, '/signup')">
+      <input type="text" id="signupUsername" placeholder="Username" required />
+      <input type="email" id="signupEmail" placeholder="Email" required />
+      <input type="password" id="signupPassword" placeholder="Password" required />
+      <button type="submit">Sign Up</button>
+    </form>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.getElementById('errorMessage').innerText = '';
+      if (tab === 'login') {
+        document.getElementById('loginForm').style.display = 'flex';
+        document.getElementById('signupForm').style.display = 'none';
+        document.getElementById('loginTabBtn').classList.add('active');
+        document.getElementById('signupTabBtn').classList.remove('active');
+      } else {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('signupForm').style.display = 'flex';
+        document.getElementById('signupTabBtn').classList.add('active');
+        document.getElementById('loginTabBtn').classList.remove('active');
+      }
+    }
+
+    async function handleAuth(event, endpoint) {
+      event.preventDefault();
+      document.getElementById('errorMessage').innerText = '';
+
+      let payload = {};
+      if (endpoint === '/login') {
+        payload = {
+          email: document.getElementById('loginEmail').value,
+          password: document.getElementById('loginPassword').value
+        };
+      } else {
+        payload = {
+          username: document.getElementById('signupUsername').value,
+          email: document.getElementById('signupEmail').value,
+          password: document.getElementById('signupPassword').value
+        };
+      }
+
+      let res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      let data = await res.json();
+
+      if (data.success) {
+        window.location.href = data.redirect;
+      } else {
+        document.getElementById('errorMessage').innerText = data.message || 'An error occurred.';
+      }
+    }
+  </script>
+</body>
+</html>
