@@ -1,0 +1,80 @@
+define usersFile = "users.json";
+if (not exists(usersFile)) {
+    writeFile(usersFile, "[]");
+}
+
+define server = createServer();
+server.get("/auth", func(req, res) {
+    return render("authenticate.html", { error: "" });
+});
+server.post("/login", func(req, res) {
+    define email = req.body.email;
+    define password = req.body.password;
+    define users = readJSON(usersFile);
+    
+    define matchedUser = null;
+    for u in users {
+        if (u.email == email and u.password == password) {
+            matchedUser = u;
+        }
+    }
+    
+    if (matchedUser == null) {
+        return render("authenticate.html", { error: "Invalid email credentials or password matching failed." });
+    }
+    req.session.userEmail = matchedUser.email;
+    req.session.userName = matchedUser.name;
+    
+    res.setCookie("user_session", matchedUser.email, { path: "/", maxAge: 3600 });
+    return "<script>window.location.href='/home';</script>";
+});
+server.post("/signup", func(req, res) {
+    define name = req.body.name;
+    define email = req.body.email;
+    define password = req.body.password;
+    define users = readJSON(usersFile);
+    
+    for u in users {
+        if (u.email == email) {
+            return render("authenticate.html", { error: "Email already registered. Proceed to login instead." });
+        }
+    }
+    
+    define newUser = { name: name, email: email, password: password };
+    push(users, newUser);
+    writeJSON(usersFile, users);
+    
+    req.session.userEmail = email;
+    req.session.userName = name;
+    
+    res.setCookie("user_session", email, { path: "/", maxAge: 3600 });
+    return "<script>window.location.href='/home';</script>";
+});
+server.get("/home", func(req, res) {
+    define currentUser = req.session.userEmail;
+    if (currentUser == null) {
+        currentUser = req.cookies.user_session;
+    }
+    if (currentUser == null) {
+        return "<script>window.location.href='/auth';</script>";
+    }
+    
+    define allUsers = readJSON(usersFile);
+    define currentUserName = "";
+    
+    for u in allUsers {
+        if (u.email == currentUser) {
+            currentUserName = u.name;
+        }
+    }
+    
+    return render("home.html", { currentUser: currentUser, userName: currentUserName });
+});
+server.get("/logout", func(req, res) {
+    req.session.userEmail = null;
+    res.setCookie("user_session", "", { path: "/", maxAge: 0 });
+    return "<script>window.location.href='/auth';</script>";
+});
+
+show("Server actively listening on local environment: http://" + getIp() + ":8080/auth");
+server.listen(8080);
