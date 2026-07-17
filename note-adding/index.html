@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      max-width: 650px; 
+      margin: 40px auto; 
+      padding: 0 20px; 
+      line-height: 1.6; 
+      color: #333;
+    }
+    form { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 12px; 
+      margin-bottom: 30px; 
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    input, textarea, button { 
+      padding: 10px; 
+      border: 1px solid #ccc; 
+      border-radius: 4px; 
+      font-size: 1rem; 
+    }
+    button { 
+      background: #0066cc; 
+      color: white; 
+      border: none; 
+      cursor: pointer; 
+      font-weight: bold; 
+      transition: background 0.2s ease;
+    }
+    button:hover { 
+      background: #0052a3; 
+    }
+    .note-card { 
+      background: #f9f9f9; 
+      padding: 15px 20px; 
+      border-left: 4px solid #0066cc; 
+      margin-bottom: 12px; 
+      border-radius: 4px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .note-card h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      color: #111;
+    }
+    .note-card p {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>{{ title }}</h1>
+
+  <form action="/add-note" method="POST">
+    <h3>Add New Note</h3>
+    <input type="text" name="title" placeholder="Note Title" required />
+    <textarea name="content" rows="4" placeholder="Write content here..." required></textarea>
+    <button type="submit">Save Note</button>
+  </form>
+
+  <h2>Your Saved Notes</h2>
+  <div id="notes-container">
+    {{ notes }}
+  </div>
+</body>
+</html>
