@@ -1,0 +1,45 @@
+define Note = defineModel("Note", {
+  title: { type: "string", required: true },
+  content: { type: "string", required: true }
+});
+define app = createServer({
+  cors: true
+});
+app.get("/", func(req, res) {
+  define notesList = Note.find();
+  define renderedNotes = map(notesList, func(note) {
+    return "<div class='note-card'>" +
+             "<h3>" + note.title + "</h3>" +
+             "<p>" + note.content + "</p>" +
+           "</div>";
+  });
+  define notesHtml = join(renderedNotes, "");
+
+  define html = render("index.html", {
+    title: "Lopo Note Manager",
+    notes: notesHtml
+  });
+
+  return res.send(html);
+});
+app.post("/add-note", func(req, res) {
+  define title = req.body.title;
+  define content = req.body.content;
+
+  if (title and content) {
+    Note.create({
+      title: title,
+      content: content
+    });
+  }
+
+  define html = render("success.html", {
+    title: title
+  });
+
+  return res.send(html);
+});
+define port = 3000;
+app.listen(port, func(p) {
+  show("Lopo Server running at http://localhost:" + p);
+});
