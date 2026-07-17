@@ -1,0 +1,32 @@
+{{ extends "layout.html" }}
+
+<h1>Military Base: Soldier Management System</h1>
+
+<h3>Add New Soldier</h3>
+<form action="/add" method="POST">
+  <input type="text" name="name" placeholder="Soldier Name" required />
+  <input type="text" name="rank" placeholder="Rank (e.g., Sergeant)" required />
+  <select name="status">
+    <option value="Active">Active</option>
+    <option value="On Leave">On Leave</option>
+    <option value="Deployed">Deployed</option>
+  </select>
+  <button type="submit">Recruit Soldier</button>
+</form>
+
+<hr>
+
+<h3>Soldier Roster</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Rank</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{ rows }}
+  </tbody>
+</table>
