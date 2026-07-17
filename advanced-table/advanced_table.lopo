@@ -1,0 +1,78 @@
+define Item = defineModel("Item", {
+  name: { type: "string", required: true },
+  category: { type: "string", required: true },
+  price: { type: "number", required: true },
+  quantity: { type: "number", required: true }
+});
+define app = createServer({
+  cors: true
+});
+app.get("/", func(req, res) {
+  define items = Item.find();
+  define totalValue = 0;
+  define totalItems = 0;
+  define totalPriceSum = 0;
+  define renderedRows = map(items, func(item) {
+    define rowTotal = item.price * item.quantity;
+    define stockStatus = "";
+    if (item.quantity < 5) {
+      stockStatus = "<span class='badge low'>Low Stock</span>";
+    } else {
+      stockStatus = "<span class='badge ok'>In Stock</span>";
+    }
+    totalValue = totalValue + rowTotal;
+    totalItems = totalItems + item.quantity;
+    totalPriceSum = totalPriceSum + item.price;
+
+    return "<tr>" +
+             "<td><strong>" + item.name + "</strong></td>" +
+             "<td>" + item.category + "</td>" +
+             "<td>$" + item.price + "</td>" +
+             "<td>" + item.quantity + "</td>" +
+             "<td>$" + rowTotal + "</td>" +
+             "<td>" + stockStatus + "</td>" +
+           "</tr>";
+  });
+  define itemCount = len(items);
+  define avgPrice = 0;
+  if (itemCount > 0) {
+    avgPrice = totalPriceSum / itemCount;
+  }
+  define tableBodyHtml = join(renderedRows, "");
+  define html = render("index.html", {
+    title: "Advanced Data Table",
+    tableBody: tableBodyHtml,
+    grandTotal: totalValue,
+    totalUnits: totalItems,
+    averagePrice: avgPrice,
+    totalRecords: itemCount
+  });
+
+  return res.send(html);
+});
+
+app.post("/add-item", func(req, res) {
+  define name = req.body.name;
+  define category = req.body.category;
+  define price = num(req.body.price);
+  define quantity = num(req.body.quantity);
+
+  if (name and price and quantity) {
+    Item.create({
+      name: name,
+      category: category,
+      price: price,
+      quantity: quantity
+    });
+  }
+
+  define html = render("success.html", {
+    message: "Item standard successfully calculated and added to table!"
+  });
+
+  return res.send(html);
+});
+define port = 3000;
+app.listen(port, func(p) {
+  show("Advanced Table Application running at http://localhost:" + p);
+});
