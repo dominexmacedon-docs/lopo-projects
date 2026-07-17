@@ -1,0 +1,212 @@
+define Product = defineModel("Product", {
+  name: { type: "string", required: true },
+  category: { type: "string", required: true },
+  costPrice: { type: "number", required: true },
+  sellPrice: { type: "number", required: true },
+  stock: { type: "number", required: true }
+});
+
+define Order = defineModel("Order", {
+  customerName: { type: "string", required: true },
+  itemCount: { type: "number", required: true },
+  subtotal: { type: "number", required: true },
+  tax: { type: "number", required: true },
+  shipping: { type: "number", required: true },
+  discount: { type: "number", required: true },
+  grandTotal: { type: "number", required: true }
+});
+define app = createServer({
+  cors: true
+});
+app.get("/", func(req, res) {
+  define products = Product.find();
+
+  define totalStockValuation = 0;
+  define totalExpectedProfit = 0;
+  define totalUnitsInStock = 0;
+  define lowStockCount = 0;
+  define renderedRows = map(products, func(item) {
+    define itemValuation = item.sellPrice * item.stock;
+    define unitProfit = item.sellPrice - item.costPrice;
+    define totalProfitPotential = unitProfit * item.stock;
+    define marginPercent = 0;
+    if (item.sellPrice > 0) {
+      marginPercent = (unitProfit / item.sellPrice) * 100;
+    }
+    totalStockValuation = totalStockValuation + itemValuation;
+    totalExpectedProfit = totalExpectedProfit + totalProfitPotential;
+    totalUnitsInStock = totalUnitsInStock + item.stock;
+    define stockBadge = "<span class='badge ok'>Optimal</span>";
+    if (item.stock < 10) {
+      stockBadge = "<span class='badge low'>Low Stock</span>";
+      lowStockCount = lowStockCount + 1;
+    }
+
+    return "<tr>" +
+             "<td><strong>" + item.name + "</strong></td>" +
+             "<td>" + item.category + "</td>" +
+             "<td>$" + item.costPrice + "</td>" +
+             "<td>$" + item.sellPrice + "</td>" +
+             "<td>" + item.stock + "</td>" +
+             "<td>$" + itemValuation + "</td>" +
+             "<td>" + marginPercent + "%</td>" +
+             "<td>" + stockBadge + "</td>" +
+           "</tr>";
+  });
+
+  define tableBodyHtml = join(renderedRows, "");
+
+  define html = render("index.html", {
+    title: "Shop Management & Calculations Hub",
+    tableBody: tableBodyHtml,
+    totalValuation: totalStockValuation,
+    totalProfit: totalExpectedProfit,
+    totalUnits: totalUnitsInStock,
+    lowStockItems: lowStockCount,
+    totalProducts: len(products)
+  });
+
+  return res.send(html);
+});
+app.get("/add-product", func(req, res) {
+  define html = render("add_product.html", {
+    title: "Register New Shop Item"
+  });
+  return res.send(html);
+});
+app.post("/add-product", func(req, res) {
+  define name = req.body.name;
+  define category = req.body.category;
+  define costPrice = num(req.body.costPrice);
+  define sellPrice = num(req.body.sellPrice);
+  define stock = num(req.body.stock);
+
+  if (name and costPrice and sellPrice and stock) {
+    Product.create({
+      name: name,
+      category: category,
+      costPrice: costPrice,
+      sellPrice: sellPrice,
+      stock: stock
+    });
+  }
+
+  define html = render("success.html", {
+    title: "Product Saved",
+    message: "New product was calculated and successfully registered to inventory!"
+  });
+
+  return res.send(html);
+});
+app.get("/checkout", func(req, res) {
+  define products = Product.find();
+
+  define productOptions = map(products, func(p) {
+    return "<option value='" + p.sellPrice + "'>" + p.name + " ($" + p.sellPrice + ")</option>";
+  });
+
+  define optionsHtml = join(productOptions, "");
+
+  define html = render("checkout.html", {
+    title: "Checkout Calculator",
+    options: optionsHtml
+  });
+
+  return res.send(html);
+});
+
+app.post("/process-checkout", func(req, res) {
+  define customerName = req.body.customerName;
+  define unitPrice = num(req.body.unitPrice);
+  define quantity = num(req.body.quantity);
+  define couponCode = req.body.couponCode;
+
+  define rawSubtotal = unitPrice * quantity;
+
+  define discountAmount = 0;
+  if (couponCode == "SAVE10") {
+    discountAmount = rawSubtotal * 0.10;
+  } else {
+    if (couponCode == "SAVE20") {
+      discountAmount = rawSubtotal * 0.20;
+    }
+  }
+
+  define subtotalAfterDiscount = rawSubtotal - discountAmount;
+  define taxAmount = subtotalAfterDiscount * 0.085;
+  define shippingCost = 15;
+  if (subtotalAfterDiscount > 100) {
+    shippingCost = 0; # Free shipping for orders over $100
+  }
+
+  define grandTotal = subtotalAfterDiscount + taxAmount + shippingCost;
+  Order.create({
+    customerName: customerName,
+    itemCount: quantity,
+    subtotal: rawSubtotal,
+    tax: taxAmount,
+    shipping: shippingCost,
+    discount: discountAmount,
+    grandTotal: grandTotal
+  });
+  define html = render("order_summary.html", {
+    title: "Order Invoice Summary",
+    customer: customerName,
+    quantity: quantity,
+    subtotal: rawSubtotal,
+    discount: discountAmount,
+    tax: taxAmount,
+    shipping: shippingCost,
+    total: grandTotal
+  });
+
+  return res.send(html);
+});
+app.get("/analytics", func(req, res) {
+  define orders = Order.find();
+
+  define grossRevenue = 0;
+  define totalTaxCollected = 0;
+  define totalDiscountsGiven = 0;
+  define totalItemsSold = 0;
+
+  define orderRows = map(orders, func(order) {
+    grossRevenue = grossRevenue + order.grandTotal;
+    totalTaxCollected = totalTaxCollected + order.tax;
+    totalDiscountsGiven = totalDiscountsGiven + order.discount;
+    totalItemsSold = totalItemsSold + order.itemCount;
+
+    return "<tr>" +
+             "<td>" + order.customerName + "</td>" +
+             "<td>" + order.itemCount + "</td>" +
+             "<td>$" + order.subtotal + "</td>" +
+             "<td>$" + order.discount + "</td>" +
+             "<td>$" + order.tax + "</td>" +
+             "<td>$" + order.shipping + "</td>" +
+             "<td><strong>$" + order.grandTotal + "</strong></td>" +
+           "</tr>";
+  });
+
+  define orderCount = len(orders);
+  define avgOrderValue = 0;
+  if (orderCount > 0) {
+    avgOrderValue = grossRevenue / orderCount;
+  }
+
+  define html = render("analytics.html", {
+    title: "Financial Analytics & Sales Reports",
+    historyTable: join(orderRows, ""),
+    revenue: grossRevenue,
+    taxCollected: totalTaxCollected,
+    discounts: totalDiscountsGiven,
+    itemsSold: totalItemsSold,
+    avgOrder: avgOrderValue,
+    totalOrders: orderCount
+  });
+
+  return res.send(html);
+});
+define port = 3000;
+app.listen(port, func(p) {
+  show("Shop System with Dynamic Calculations running at http://localhost:" + p);
+});
