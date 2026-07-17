@@ -1,0 +1,50 @@
+define Soldier = defineModel("Soldier", {
+  name: { type: "string", required: true },
+  rank: { type: "string", required: true },
+  status: { type: "string", required: true }
+});
+define app = createServer();
+app.get("/", func(req, res) {
+  define soldiers = Soldier.find({});
+  define rowsHtml = "";
+  for soldier in soldiers {
+    rowsHtml = rowsHtml + "<tr>";
+    rowsHtml = rowsHtml + "<td>" + soldier.name + "</td>";
+    rowsHtml = rowsHtml + "<td>" + soldier.rank + "</td>";
+    rowsHtml = rowsHtml + "<td>" + soldier.status + "</td>";
+    rowsHtml = rowsHtml + "<td><a href='/delete?id=" + soldier.id + "'><button class='btn-delete'>Dismiss</button></a></td>";
+    rowsHtml = rowsHtml + "</tr>";
+  }
+
+  if (len(soldiers) == 0) {
+    rowsHtml = "<tr><td colspan='4' style='text-align:center;'>No soldiers currently enlisted.</td></tr>";
+  }
+
+  let html = render("index.html", { rows: rowsHtml });
+  return res.send(html);
+});
+app.post("/add", func(req, res) {
+  define body = req.body;
+
+  if (body.name and body.rank) {
+    Soldier.create({
+      name: body.name,
+      rank: body.rank,
+      status: body.status ?? "Active"
+    });
+  }
+
+  return res.send("<script>window.location.href='/';</script>");
+});
+app.get("/delete", func(req, res) {
+  define soldierId = req.query.id;
+
+  if (soldierId) {
+    Soldier.delete(soldierId);
+  }
+
+  return res.send("<script>window.location.href='/';</script>");
+});
+app.listen(3000, func(port) {
+  show("Soldier Management Server running on http://localhost:3000");
+});
