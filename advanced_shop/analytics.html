@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 30px auto; padding: 0 20px; background-color: #f8fafc; }
+    nav { display: flex; gap: 15px; background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e2e8f0; }
+    nav a { color: #2563eb; font-weight: 600; text-decoration: none; }
+    .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .card { background: #fff; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .card h4 { margin: 0; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
+    .card .value { font-size: 1.4rem; font-weight: bold; margin-top: 5px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; }
+    th, td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    th { background: #f1f5f9; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/add-product">Add Product</a>
+    <a href="/checkout">Checkout Calculator</a>
+    <a href="/analytics">Analytics & Reports</a>
+  </nav>
+
+  <h1>Sales & Order Analytics</h1>
+
+  <div class="dashboard">
+    <div class="card">
+      <h4>Gross Revenue</h4>
+      <div class="value">${{ revenue }}</div>
+    </div>
+    <div class="card">
+      <h4>Average Order Value</h4>
+      <div class="value">${{ avgOrder }}</div>
+    </div>
+    <div class="card">
+      <h4>Total Tax Collected</h4>
+      <div class="value">${{ taxCollected }}</div>
+    </div>
+    <div class="card">
+      <h4>Discounts Redeemed</h4>
+      <div class="value">${{ discounts }}</div>
+    </div>
+  </div>
+
+  <h2>Processed Calculation Logs</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th>Items</th>
+        <th>Subtotal</th>
+        <th>Discount</th>
+        <th>Tax</th>
+        <th>Shipping</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ historyTable }}
+    </tbody>
+  </table>
+
+</body>
+</html>

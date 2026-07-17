@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 30px auto; padding: 0 20px; background-color: #f8fafc; }
+    nav { display: flex; gap: 15px; background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #e2e8f0; }
+    nav a { color: #2563eb; font-weight: 600; text-decoration: none; }
+    form { background: #fff; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px; }
+    input, select, button { padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 1rem; }
+    button { background: #16a34a; color: white; font-weight: bold; cursor: pointer; border: none; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/add-product">Add Product</a>
+    <a href="/checkout">Checkout Calculator</a>
+    <a href="/analytics">Analytics & Reports</a>
+  </nav>
+
+  <h1>Checkout & Tax/Shipping Calculator</h1>
+
+  <form action="/process-checkout" method="POST">
+    <label>Customer Name</label>
+    <input type="text" name="customerName" required />
+
+    <label>Select Product Price</label>
+    <select name="unitPrice" required>
+      {{ options }}
+    </select>
+
+    <label>Quantity</label>
+    <input type="number" name="quantity" value="1" min="1" required />
+
+    <label>Coupon Code (Try SAVE10 or SAVE20)</label>
+    <input type="text" name="couponCode" placeholder="Optional coupon" />
+
+    <button type="submit">Calculate Order Invoice</button>
+  </form>
+
+</body>
+</html>

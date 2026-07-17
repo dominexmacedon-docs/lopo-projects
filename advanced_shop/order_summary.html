@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 500px; margin: 40px auto; padding: 0 20px; background-color: #f8fafc; }
+    .invoice { background: #fff; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .line { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .total { border-top: 2px solid #0f172a; padding-top: 10px; font-weight: bold; font-size: 1.2rem; }
+    a { display: inline-block; margin-top: 15px; color: #2563eb; text-decoration: none; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div class="invoice">
+    <h2>Invoice Breakdown</h2>
+    <p><strong>Customer:</strong> {{ customer }}</p>
+    <p><strong>Item Quantity:</strong> {{ quantity }}</p>
+    <hr>
+    <div class="line"><span>Subtotal:</span> <span>${{ subtotal }}</span></div>
+    <div class="line"><span>Discount:</span> <span>-${{ discount }}</span></div>
+    <div class="line"><span>Sales Tax (8.5%):</span> <span>+${{ tax }}</span></div>
+    <div class="line"><span>Shipping Fee:</span> <span>+${{ shipping }}</span></div>
+    <hr>
+    <div class="line total"><span>Grand Total:</span> <span>${{ total }}</span></div>
+
+    <a href="/checkout">Perform Another Calculation</a> | <a href="/analytics">View Sales Analytics</a>
+  </div>
+
+</body>
+</html>
