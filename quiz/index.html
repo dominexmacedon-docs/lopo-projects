@@ -1,0 +1,12 @@
+{{ extends "layout.html" }}
+
+<h1>Knowledge Check Quiz</h1>
+
+{{ result }}
+
+<form action="/submit" method="POST">
+  {{ questions }}
+
+  <button type="submit">Submit & Check Answers</button>
+
+</form>
