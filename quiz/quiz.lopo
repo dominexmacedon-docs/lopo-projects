@@ -1,0 +1,72 @@
+define app = createServer();
+define quizData = [
+  {
+    id: "q1",
+    question: "1. What is the capital of France?",
+    options: { a: "Berlin", b: "Paris", c: "Madrid" },
+    answer: "b"
+  },
+  {
+    id: "q2",
+    question: "2. Which primary language pattern is used for this app?",
+    options: { a: "Lopo Scripting Engine", b: "Assembly Language", c: "Pure C++" },
+    answer: "a"
+  },
+  {
+    id: "q3",
+    question: "3. What is 5 + 7?",
+    options: { a: "10", b: "12", c: "14" },
+    answer: "b"
+  }
+];
+func renderQuestionsHtml() {
+  define html = "";
+  for item in quizData {
+    html = html + "<div class='question-block'>";
+    html = html + "<div class='question-title'>" + item.question + "</div>";
+    html = html + "<label><input type='radio' name='" + item.id + "' value='a' required> (a) " + item.options.a + "</label>";
+    html = html + "<label><input type='radio' name='" + item.id + "' value='b'> (b) " + item.options.b + "</label>";
+    html = html + "<label><input type='radio' name='" + item.id + "' value='c'> (c) " + item.options.c + "</label>";
+    
+    html = html + "</div>";
+  }
+  return html;
+}
+
+app.get("/", func(req, res) {
+  define questionsMarkup = renderQuestionsHtml();
+  define html = render("index.html", { 
+    questions: questionsMarkup, 
+    result: "" 
+  });
+  return res.send(html);
+});
+app.post("/submit", func(req, res) {
+  define userAnswers = req.body;
+  define score = 0;
+  define totalQuestions = len(quizData);
+  for item in quizData {
+    define submittedAnswer = userAnswers[item.id];
+    if (submittedAnswer == item.answer) {
+      score = score + 1;
+    }
+  }
+  define resultHtml = "<div class='score-box'>";
+  resultHtml = resultHtml + "<h2>Your Score: " + score + " / " + totalQuestions + "</h2>";
+  
+  if (score == totalQuestions) {
+    resultHtml = resultHtml + "<p> Perfect Score! Outstanding work!</p>";
+  } else {
+    resultHtml = resultHtml + "<p>Good effort! Review your choices and try again.</p>";
+  }
+  resultHtml = resultHtml + "</div>";
+  define questionsMarkup = renderQuestionsHtml();
+  define html = render("index.html", { 
+    questions: questionsMarkup, 
+    result: resultHtml 
+  });
+  return res.send(html);
+});
+app.listen(3000, func(port) {
+  show("Dynamic Quiz server running on http://localhost:3000");
+});
