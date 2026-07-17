@@ -1,0 +1,465 @@
+define Account = defineModel("Account", {
+  accountNumber: { type: "string", required: true },
+  holderName: { type: "string", required: true },
+  accountType: { type: "string", required: true },
+  balance: { type: "number", required: true },
+  interestRate: { type: "number", required: true },
+  creditLimit: { type: "number", required: true },
+  status: { type: "string", required: true }
+});
+define Transaction = defineModel("Transaction", {
+  transactionId: { type: "string", required: true },
+  accountNumber: { type: "string", required: true },
+  type: { type: "string", required: true },
+  amount: { type: "number", required: true },
+  resultingBalance: { type: "number", required: true },
+  description: { type: "string", required: true },
+  timestamp: { type: "string", required: true }
+});
+define Loan = defineModel("Loan", {
+  loanId: { type: "string", required: true },
+  borrowerName: { type: "string", required: true },
+  principalAmount: { type: "number", required: true },
+  annualRate: { type: "number", required: true },
+  termMonths: { type: "number", required: true },
+  monthlyPayment: { type: "number", required: true },
+  remainingBalance: { type: "number", required: true }
+});
+define app = createServer({
+  cors: true
+});
+func generateAccountId() {
+  define prefix = "ACC-";
+  define randomPart = Math.floor(Math.random() * 899999) + 100000;
+  return prefix + randomPart;
+}
+
+func generateTxId() {
+  define prefix = "TXN-";
+  define randomPart = Math.floor(Math.random() * 8999999) + 1000000;
+  return prefix + randomPart;
+}
+
+func generateLoanId() {
+  define prefix = "LN-";
+  define randomPart = Math.floor(Math.random() * 8999) + 1000;
+  return prefix + randomPart;
+}
+func calculateMonthlyLoanPayment(principal, annualRatePercent, months) {
+  if (months <= 0) {
+    return 0;
+  }
+  define monthlyRate = (annualRatePercent / 100) / 12;
+  if (monthlyRate == 0) {
+    return principal / months;
+  }
+  define factor = 1;
+  define count = 0;
+  while (count < months) {
+    factor = factor * (1 + monthlyRate);
+    count = count + 1;
+  }
+  define monthlyPayment = principal * (monthlyRate * factor) / (factor - 1);
+  return monthlyPayment;
+}
+func calculateCompoundGrowth(principal, ratePercent, years) {
+  define r = ratePercent / 100;
+  define growthFactor = 1;
+  define yearCounter = 0;
+  while (yearCounter < years) {
+    growthFactor = growthFactor * (1 + r);
+    yearCounter = yearCounter + 1;
+  }
+  return principal * growthFactor;
+}
+func findAccountByNumber(accNum) {
+  define accounts = Account.find();
+  define found = null;
+  define index = 0;
+  define total = len(accounts);
+  while (index < total) {
+    define current = accounts[index];
+    if (current.accountNumber == accNum) {
+      found = current;
+    }
+    index = index + 1;
+  }
+  return found;
+}
+app.get("/", func(req, res) {
+  define allAccounts = Account.find();
+  define allTransactions = Transaction.find();
+
+  define aggregateBalance = 0;
+  define aggregateChecking = 0;
+  define aggregateSavings = 0;
+  define aggregateInvestment = 0;
+  define countActive = 0;
+  define countDormant = 0;
+  define riskFlagCount = 0;
+
+  define accountRows = map(allAccounts, func(acc) {
+    define currentBal = num(acc.balance);
+    aggregateBalance = aggregateBalance + currentBal;
+
+    if (acc.accountType == "Checking") {
+      aggregateChecking = aggregateChecking + currentBal;
+    }
+    if (acc.accountType == "Savings") {
+      aggregateSavings = aggregateSavings + currentBal;
+    }
+    if (acc.accountType == "Investment") {
+      aggregateInvestment = aggregateInvestment + currentBal;
+    }
+
+    if (acc.status == "Active") {
+      countActive = countActive + 1;
+    } else {
+      countDormant = countDormant + 1;
+    }
+    define badgeClass = "badge-ok";
+    define statusText = "Healthy";
+
+    if (currentBal < 100) {
+      badgeClass = "badge-low";
+      statusText = "Low Reserve";
+      riskFlagCount = riskFlagCount + 1;
+    }
+    if (currentBal > 50000) {
+      badgeClass = "badge-vip";
+      statusText = "VIP Vault";
+    }
+
+    return "<tr>" +
+             "<td><strong>" + acc.accountNumber + "</strong></td>" +
+             "<td>" + acc.holderName + "</td>" +
+             "<td>" + acc.accountType + "</td>" +
+             "<td>$" + currentBal + "</td>" +
+             "<td>" + acc.interestRate + "%</td>" +
+             "<td><span class='badge " + badgeClass + "'>" + statusText + "</span></td>" +
+           "</tr>";
+  });
+
+  define accountCount = len(allAccounts);
+  define averageAccountValue = 0;
+  if (accountCount > 0) {
+    averageAccountValue = aggregateBalance / accountCount;
+  }
+
+  define tableHtml = join(accountRows, "");
+
+  define html = render("index.html", {
+    title: "Core Banking Executive Dashboard",
+    accountRows: tableHtml,
+    totalVaultLiquidity: aggregateBalance,
+    totalChecking: aggregateChecking,
+    totalSavings: aggregateSavings,
+    totalInvestment: aggregateInvestment,
+    avgAccountValue: averageAccountValue,
+    activeAccounts: countActive,
+    dormantAccounts: countDormant,
+    riskAlerts: riskFlagCount,
+    totalAccounts: accountCount
+  });
+
+  return res.send(html);
+});
+app.get("/create-account", func(req, res) {
+  define html = render("create_account.html", {
+    title: "Open New Bank Account"
+  });
+  return res.send(html);
+});
+
+app.post("/create-account", func(req, res) {
+  define name = req.body.holderName;
+  define accType = req.body.accountType;
+  define initialDeposit = num(req.body.initialDeposit);
+  define customInterest = num(req.body.interestRate);
+
+  if (name and accType and initialDeposit >= 0) {
+    define newAccNumber = generateAccountId();
+    define overdraftLimit = 0;
+
+    if (accType == "Checking") {
+      overdraftLimit = 500;
+    }
+
+    Account.create({
+      accountNumber: newAccNumber,
+      holderName: name,
+      accountType: accType,
+      balance: initialDeposit,
+      interestRate: customInterest,
+      creditLimit: overdraftLimit,
+      status: "Active"
+    });
+    Transaction.create({
+      transactionId: generateTxId(),
+      accountNumber: newAccNumber,
+      type: "DEPOSIT",
+      amount: initialDeposit,
+      resultingBalance: initialDeposit,
+      description: "Initial account setup deposit",
+      timestamp: "2026-07-17 10:00:00"
+    });
+  }
+
+  define html = render("success.html", {
+    title: "Account Created Successfully",
+    message: "New account has been provisioned and opening ledger has been computed!"
+  });
+
+  return res.send(html);
+});
+app.get("/transfer", func(req, res) {
+  define allAccounts = Account.find();
+
+  define sourceOptions = map(allAccounts, func(acc) {
+    return "<option value='" + acc.accountNumber + "'>" + acc.accountNumber + " - " + acc.holderName + " ($" + acc.balance + ")</option>";
+  });
+
+  define targetOptions = map(allAccounts, func(acc) {
+    return "<option value='" + acc.accountNumber + "'>" + acc.accountNumber + " - " + acc.holderName + "</option>";
+  });
+
+  define html = render("transfer.html", {
+    title: "Funds Transfer Simulator",
+    sourceOptionsHtml: join(sourceOptions, ""),
+    targetOptionsHtml: join(targetOptions, "")
+  });
+
+  return res.send(html);
+});
+
+app.post("/process-transfer", func(req, res) {
+  define senderAccNum = req.body.senderAccount;
+  define recipientAccNum = req.body.recipientAccount;
+  define transferAmount = num(req.body.amount);
+  define includeFee = req.body.includeWireFee;
+
+  if (senderAccNum == recipientAccNum) {
+    define html = render("error.html", {
+      title: "Transfer Aborted",
+      errorMessage: "Source and Target accounts cannot be identical."
+    });
+    return res.send(html);
+  }
+
+  define sender = findAccountByNumber(senderAccNum);
+  define recipient = findAccountByNumber(recipientAccNum);
+
+  if (sender and recipient) {
+    define wireFee = 0;
+    if (includeFee == "YES") {
+      wireFee = 15;
+    }
+
+    define totalDeduction = transferAmount + wireFee;
+    define senderEffectiveBalance = num(sender.balance) + num(sender.creditLimit);
+
+    if (senderEffectiveBalance >= totalDeduction) {
+      define newSenderBalance = num(sender.balance) - totalDeduction;
+      define newRecipientBalance = num(recipient.balance) + transferAmount;
+      Account.update(sender.id, { balance: newSenderBalance });
+      Account.update(recipient.id, { balance: newRecipientBalance });
+      Transaction.create({
+        transactionId: generateTxId(),
+        accountNumber: sender.accountNumber,
+        type: "TRANSFER_OUT",
+        amount: totalDeduction,
+        resultingBalance: newSenderBalance,
+        description: "Transfer to " + recipient.accountNumber + " (Fee: $" + wireFee + ")",
+        timestamp: "2026-07-17 11:30:00"
+      });
+
+      Transaction.create({
+        transactionId: generateTxId(),
+        accountNumber: recipient.accountNumber,
+        type: "TRANSFER_IN",
+        amount: transferAmount,
+        resultingBalance: newRecipientBalance,
+        description: "Received from " + sender.accountNumber,
+        timestamp: "2026-07-17 11:30:00"
+      });
+
+      define html = render("receipt.html", {
+        title: "Transaction Wire Receipt",
+        txId: generateTxId(),
+        sender: sender.accountNumber,
+        recipient: recipient.accountNumber,
+        amountTransferred: transferAmount,
+        feeCharged: wireFee,
+        totalDebited: totalDeduction,
+        senderRemainingBalance: newSenderBalance
+      });
+      return res.send(html);
+    } else {
+      define html = render("error.html", {
+        title: "Insufficient Liquidity",
+        errorMessage: "Transfer declined. Balance and credit lines are insufficient."
+      });
+      return res.send(html);
+    }
+  }
+
+  define html = render("error.html", {
+    title: "System Failure",
+    errorMessage: "Invalid account numbers supplied for processing."
+  });
+  return res.send(html);
+});
+app.get("/loans", func(req, res) {
+  define loans = Loan.find();
+
+  define totalLoanPrincipal = 0;
+  define totalMonthlyReceivables = 0;
+
+  define loanRows = map(loans, func(l) {
+    define p = num(l.principalAmount);
+    define m = num(l.monthlyPayment);
+
+    totalLoanPrincipal = totalLoanPrincipal + p;
+    totalMonthlyReceivables = totalMonthlyReceivables + m;
+
+    return "<tr>" +
+             "<td><strong>" + l.loanId + "</strong></td>" +
+             "<td>" + l.borrowerName + "</td>" +
+             "<td>$" + p + "</td>" +
+             "<td>" + l.annualRate + "%</td>" +
+             "<td>" + l.termMonths + " Months</td>" +
+             "<td>$" + m + "</td>" +
+             "<td>$" + l.remainingBalance + "</td>" +
+           "</tr>";
+  });
+
+  define html = render("loans.html", {
+    title: "Loan Amortization & Credit Center",
+    loanRowsHtml: join(loanRows, ""),
+    totalPortfolioValue: totalLoanPrincipal,
+    monthlyCashFlow: totalMonthlyReceivables,
+    activeLoanCount: len(loans)
+  });
+
+  return res.send(html);
+});
+
+app.post("/calculate-loan", func(req, res) {
+  define borrower = req.body.borrowerName;
+  define principal = num(req.body.principal);
+  define rate = num(req.body.annualRate);
+  define term = num(req.body.termMonths);
+
+  if (borrower and principal > 0 and term > 0) {
+    define computedPayment = calculateMonthlyLoanPayment(principal, rate, term);
+    define newLoanId = generateLoanId();
+
+    Loan.create({
+      loanId: newLoanId,
+      borrowerName: borrower,
+      principalAmount: principal,
+      annualRate: rate,
+      termMonths: term,
+      monthlyPayment: computedPayment,
+      remainingBalance: principal
+    });
+
+    define html = render("loan_summary.html", {
+      title: "Loan Calculation & Approval",
+      loanId: newLoanId,
+      borrower: borrower,
+      principal: principal,
+      rate: rate,
+      term: term,
+      monthlyPayment: computedPayment,
+      totalPayout: computedPayment * term,
+      totalInterestCost: (computedPayment * term) - principal
+    });
+    return res.send(html);
+  }
+
+  define html = render("error.html", {
+    title: "Loan Engine Error",
+    errorMessage: "Invalid inputs submitted for credit evaluation."
+  });
+  return res.send(html);
+});
+app.get("/interest-calculator", func(req, res) {
+  define html = render("interest_calculator.html", {
+    title: "Investment & Compound Interest Projection Hub"
+  });
+  return res.send(html);
+});
+
+app.post("/project-interest", func(req, res) {
+  define deposit = num(req.body.principal);
+  define annualRate = num(req.body.rate);
+  define durationYears = num(req.body.years);
+
+  define projectedValues = [];
+  define currentPrincipal = deposit;
+  define yearCounter = 1;
+
+  while (yearCounter <= durationYears) {
+    currentPrincipal = calculateCompoundGrowth(deposit, annualRate, yearCounter);
+    define earnedInterest = currentPrincipal - deposit;
+
+    projectedValues[yearCounter - 1] = "<tr>" +
+      "<td>Year " + yearCounter + "</td>" +
+      "<td>$" + deposit + "</td>" +
+      "<td>" + annualRate + "%</td>" +
+      "<td>$" + earnedInterest + "</td>" +
+      "<td><strong>$" + currentPrincipal + "</strong></td>" +
+    "</tr>";
+
+    yearCounter = yearCounter + 1;
+  }
+
+  define html = render("interest_result.html", {
+    title: "Yield Forecast Report",
+    initialInvestment: deposit,
+    rate: annualRate,
+    years: durationYears,
+    finalValuation: currentPrincipal,
+    totalGain: currentPrincipal - deposit,
+    projectionRows: join(projectedValues, "")
+  });
+
+  return res.send(html);
+});
+app.get("/audit-log", func(req, res) {
+  define txList = Transaction.find();
+
+  define totalVolume = 0;
+
+  define rows = map(txList, func(tx) {
+    define amountVal = num(tx.amount);
+    totalVolume = totalVolume + amountVal;
+
+    return "<tr>" +
+             "<td><code>" + tx.transactionId + "</code></td>" +
+             "<td>" + tx.accountNumber + "</td>" +
+             "<td>" + tx.type + "</td>" +
+             "<td>$" + amountVal + "</td>" +
+             "<td>$" + tx.resultingBalance + "</td>" +
+             "<td>" + tx.description + "</td>" +
+             "<td>" + tx.timestamp + "</td>" +
+           "</tr>";
+  });
+
+  define html = render("audit_log.html", {
+    title: "System-wide Audit Ledger",
+    txRows: join(rows, ""),
+    totalTxCount: len(txList),
+    totalTxVolume: totalVolume
+  });
+
+  return res.send(html);
+});
+define port = 3000;
+app.listen(port, func(p) {
+  show("=========================================================");
+  show("ADVANCED BANKING ENGINE RUNNING ON PORT: " + p);
+  show("URL: http://localhost:" + p);
+  show("=========================================================");
+});
