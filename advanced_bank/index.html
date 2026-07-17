@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 30px auto; padding: 0 20px; background-color: #f1f5f9; color: #0f172a; }
+    nav { display: flex; gap: 12px; background: #0f172a; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; }
+    nav a { color: #f8fafc; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+    nav a:hover { color: #38bdf8; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .card { background: #fff; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .card h4 { margin: 0; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card .val { font-size: 1.4rem; font-weight: bold; margin-top: 6px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; }
+    th, td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    th { background: #f8fafc; color: #475569; font-weight: 600; }
+    .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+    .badge-ok { background: #dcfce7; color: #166534; }
+    .badge-low { background: #fee2e2; color: #991b1b; }
+    .badge-vip { background: #fef3c7; color: #92400e; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/create-account">Open Account</a>
+    <a href="/transfer">Wire Transfer</a>
+    <a href="/loans">Loans & Amortization</a>
+    <a href="/interest-calculator">Yield Forecast</a>
+    <a href="/audit-log">Audit Log</a>
+  </nav>
+
+  <h1>Executive Vault & Liquidity Overview</h1>
+
+  <div class="kpi-grid">
+    <div class="card">
+      <h4>Total Bank Vault Liquidity</h4>
+      <div class="val">${{ totalVaultLiquidity }}</div>
+    </div>
+    <div class="card">
+      <h4>Checking Reserves</h4>
+      <div class="val">${{ totalChecking }}</div>
+    </div>
+    <div class="card">
+      <h4>Savings Liquidity</h4>
+      <div class="val">${{ totalSavings }}</div>
+    </div>
+    <div class="card">
+      <h4>Average Account Value</h4>
+      <div class="val">${{ avgAccountValue }}</div>
+    </div>
+    <div class="card">
+      <h4>Risk & Reserve Flags</h4>
+      <div class="val" style="color: #dc2626;">{{ riskAlerts }}</div>
+    </div>
+  </div>
+
+  <h2>Active Account Registries</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Account #</th>
+        <th>Holder Name</th>
+        <th>Type</th>
+        <th>Balance</th>
+        <th>Interest</th>
+        <th>Health Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ accountRows }}
+    </tbody>
+  </table>
+
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 30px auto; padding: 0 20px; background-color: #f1f5f9; }
+    nav { display: flex; gap: 12px; background: #0f172a; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; }
+    nav a { color: #f8fafc; text-decoration: none; font-weight: 600; }
+    form { background: #fff; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 15px; }
+    input, button { padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 1rem; }
+    button { background: #0284c7; color: white; font-weight: bold; cursor: pointer; border: none; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/">← Return to Dashboard</a>
+  </nav>
+
+  <h1>Compound Investment Yield Forecaster</h1>
+
+  <form action="/project-interest" method="POST">
+    <label>Principal Investment Deposit ($)</label>
+    <input type="number" step="0.01" name="principal" placeholder="10000.00" required />
+
+    <label>Expected Annual Return Rate (%)</label>
+    <input type="number" step="0.01" name="rate" placeholder="5.5" required />
+
+    <label>Forecast Horizon (Years)</label>
+    <input type="number" name="years" value="5" min="1" max="30" required />
+
+    <button type="submit">Run Yield Compound Projection</button>
+  </form>
+
+</body>
+</html>

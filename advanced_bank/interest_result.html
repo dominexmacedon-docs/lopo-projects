@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 30px auto; padding: 0 20px; background-color: #f1f5f9; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; border: 1px solid #cbd5e1; margin-top: 20px; }
+    th, td { padding: 12px; border-bottom: 1px solid #cbd5e1; text-align: left; }
+    th { background: #0f172a; color: white; }
+    a { display: inline-block; margin-top: 20px; color: #0284c7; text-decoration: none; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>Investment Growth Projection</h1>
+  <p>Initial Principal: <strong>${{ initialInvestment }}</strong> | Compound Interest Rate: <strong>{{ rate }}%</strong></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Year</th>
+        <th>Principal</th>
+        <th>Interest Rate</th>
+        <th>Total Interest Earned</th>
+        <th>End Year Portfolio Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ projectionRows }}
+    </tbody>
+  </table>
+
+  <h3>Forecasted Value: ${{ finalValuation }} (Total Profit: ${{ totalGain }})</h3>
+
+  <a href="/interest-calculator">Re-run Forecast Model</a> | <a href="/">Dashboard</a>
+
+</body>
+</html>

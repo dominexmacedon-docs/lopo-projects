@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 30px auto; padding: 0 20px; background-color: #f1f5f9; }
+    nav { display: flex; gap: 12px; background: #0f172a; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; }
+    nav a { color: #f8fafc; text-decoration: none; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; }
+    th, td { padding: 10px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 0.9rem; }
+    th { background: #f8fafc; }
+    code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/audit-log">Audit Log</a>
+  </nav>
+
+  <h1>System Transaction Audit Ledger</h1>
+  <p>Total Recorded Events: <strong>{{ totalTxCount }}</strong> | Total Gross Volume Transacted: <strong>${{ totalTxVolume }}</strong></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Tx ID</th>
+        <th>Account #</th>
+        <th>Type</th>
+        <th>Amount</th>
+        <th>Ending Balance</th>
+        <th>Description</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{ txRows }}
+    </tbody>
+  </table>
+
+</body>
+</html>

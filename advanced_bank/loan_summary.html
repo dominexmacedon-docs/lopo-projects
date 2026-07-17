@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 500px; margin: 40px auto; padding: 0 20px; background-color: #f1f5f9; }
+    .card { background: #fff; padding: 25px; border-radius: 8px; border: 1px solid #cbd5e1; }
+    .line { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    a { display: inline-block; margin-top: 15px; color: #0284c7; font-weight: bold; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Amortization Schedule Approved</h2>
+    <p><strong>Loan Reference:</strong> <code>{{ loanId }}</code></p>
+    <p><strong>Borrower:</strong> {{ borrower }}</p>
+    <hr>
+    <div class="line"><span>Loan Principal:</span> <span>${{ principal }}</span></div>
+    <div class="line"><span>Annual Interest Rate:</span> <span>{{ rate }}%</span></div>
+    <div class="line"><span>Term Length:</span> <span>{{ term }} Months</span></div>
+    <div class="line"><span>Monthly Payment (P&I):</span> <span><strong>${{ monthlyPayment }}</strong></span></div>
+    <div class="line"><span>Total Cost of Borrowing:</span> <span>${{ totalPayout }}</span></div>
+    <div class="line"><span>Total Interest Charges:</span> <span>${{ totalInterestCost }}</span></div>
+
+    <a href="/loans"> Back to Loan Desk</a>
+  </div>
+
+</body>
+</html>

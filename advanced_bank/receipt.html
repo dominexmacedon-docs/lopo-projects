@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 500px; margin: 40px auto; padding: 0 20px; background-color: #f1f5f9; }
+    .receipt { background: #fff; padding: 30px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .line { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .line.total { border-top: 2px solid #0f172a; padding-top: 10px; font-weight: bold; font-size: 1.1rem; }
+    a { display: inline-block; margin-top: 20px; color: #0284c7; text-decoration: none; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div class="receipt">
+    <h2>Transaction Settlement Receipt</h2>
+    <p><strong>Reference Ref:</strong> <code>{{ txId }}</code></p>
+    <hr>
+    <div class="line"><span>Debited Account:</span> <span>{{ sender }}</span></div>
+    <div class="line"><span>Credited Account:</span> <span>{{ recipient }}</span></div>
+    <div class="line"><span>Base Transfer Amount:</span> <span>${{ amountTransferred }}</span></div>
+    <div class="line"><span>Processing Fee:</span> <span>${{ feeCharged }}</span></div>
+    <div class="line total"><span>Total Sender Deduction:</span> <span>${{ totalDebited }}</span></div>
+    <hr>
+    <div class="line"><span>Sender New Balance:</span> <span>${{ senderRemainingBalance }}</span></div>
+
+    <a href="/transfer"> New Transfer</a> | <a href="/">Dashboard </a>
+  </div>
+
+</body>
+</html>
