@@ -1,0 +1,209 @@
+define UserAccount = defineModel("UserAccount", {
+  username: { type: "string", required: true },
+  passphrase: { type: "string", required: true },
+  balance: { type: "number", required: true },
+  completedQuizzes: { type: "number", required: true }
+});
+
+define FinancialLedger = defineModel("FinancialLedger", {
+  sender: { type: "string", required: true },
+  recipient: { type: "string", required: true },
+  amount: { type: "number", required: true },
+  timestamp: { type: "string", required: true }
+});
+
+define QuizTemplate = defineModel("QuizTemplate", {
+  questionId: { type: "number", required: true },
+  prompt: { type: "string", required: true },
+  optionA: { type: "string", required: true },
+  optionB: { type: "string", required: true },
+  optionC: { type: "string", required: true },
+  correctAnswer: { type: "string", required: true }
+});
+
+define seedSystemData = func() {
+  define existingQuizzes = QuizTemplate.find({});
+  if (len(existingQuizzes) == 0) {
+    QuizTemplate.create({ questionId: 1, prompt: "Which hashing algorithm is widely used for secure password storage?", optionA: "MD5", optionB: "SHA-256", optionC: "ROT13", correctAnswer: "B" });
+    QuizTemplate.create({ questionId: 2, prompt: "What property ensures that database transactions are processed reliably?", optionA: "ACID", optionB: "BASE", optionC: "REST", correctAnswer: "A" });
+    QuizTemplate.create({ questionId: 3, prompt: "In banking systems, what does 'Double-Entry' bookkeeping imply?", optionA: "Two managers approve one withdrawal", optionB: "Every debit has a corresponding credit", optionC: "Logging into two accounts concurrently", correctAnswer: "B" });
+    show("System Diagnostics: Seed data initialized for Examination Hub.");
+  }
+};
+seedSystemData();
+define runtimeApp = createServer();
+define currentSessionUser = ""; 
+
+define requireAuthentication = func(responseObject) {
+  if (currentSessionUser == "") {
+    return responseObject.send("<h3>Access Denied. Please <a href='/'>Log In</a> to access this secure zone.</h3>");
+  }
+  return true;
+};
+runtimeApp.get("/", func(req, res) {
+  define renderedPage = render("index.html", {
+    currentUser: currentSessionUser
+  });
+  return res.send(renderedPage);
+});
+
+runtimeApp.post("/auth/process", func(req, res) {
+  define payload = req.body;
+  define targetUser = payload.user;
+  define targetPass = payload.pass;
+  define executionAction = payload.action;
+
+  if (executionAction == "register") {
+    define matchedAccounts = UserAccount.find({ username: targetUser });
+    if (len(matchedAccounts) > 0) {
+      return res.send("<h3>Registration Error: Username identity conflict. <a href='/'>Retry</a></h3>");
+    }
+    UserAccount.create({ username: targetUser, passphrase: targetPass, balance: 1000, completedQuizzes: 0 });
+    currentSessionUser = targetUser;
+    return res.send("<script>alert('Account created! Free $1,000 promo credit applied.'); window.location.href='/';</script>");
+  }
+
+  if (executionAction == "login") {
+    define lookupAccounts = UserAccount.find({ username: targetUser, passphrase: targetPass });
+    if (len(lookupAccounts) == 0) {
+      return res.send("<h3>Authentication Void: Identity credentials mismatch. <a href='/'>Retry</a></h3>");
+    }
+    currentSessionUser = targetUser;
+    return res.send("<script>window.location.href='/';</script>");
+  }
+
+  return res.send("<script>window.location.href='/';</script>");
+});
+
+runtimeApp.get("/logout", func(req, res) {
+  currentSessionUser = "";
+  return res.send("<script>alert('Identity reference destroyed. Session dropped.'); window.location.href='/';</script>");
+});
+runtimeApp.get("/banking", func(req, res) {
+  if (currentSessionUser == "") { return requireAuthentication(res); }
+
+  define accountQuery = UserAccount.find({ username: currentSessionUser });
+  define currentUserRecord = accountQuery[0];
+  define globalRowsBuffer = "";
+  define fullLedger = FinancialLedger.find({});
+  
+  for transactionItem in fullLedger {
+    globalRowsBuffer = globalRowsBuffer + "<tr>";
+    globalRowsBuffer = globalRowsBuffer + "  <td>" + transactionItem.sender + "</td>";
+    globalRowsBuffer = globalRowsBuffer + "  <td>" + transactionItem.recipient + "</td>";
+    globalRowsBuffer = globalRowsBuffer + "  <td>$" + transactionItem.amount + "</td>";
+    globalRowsBuffer = globalRowsBuffer + "</tr>";
+  }
+
+  define bankingPage = render("banking.html", {
+    username: currentUserRecord.username,
+    balance: currentUserRecord.balance,
+    ledgerRows: globalRowsBuffer
+  });
+
+  return res.send(bankingPage);
+});
+
+runtimeApp.post("/banking/transfer", func(req, res) {
+  if (currentSessionUser == "") { return requireAuthentication(res); }
+
+  define transferForm = req.body;
+  define destinationUser = transferForm.recipient;
+  define transferQuantum = num(transferForm.amount);
+
+  define senderIdentityQuery = UserAccount.find({ username: currentSessionUser });
+  define senderEntity = senderIdentityQuery[0];
+
+  define recipientIdentityQuery = UserAccount.find({ username: destinationUser });
+  if (len(recipientIdentityQuery) == 0) {
+    return res.send("<h3>Transaction Terminated: Invalid Beneficiary entity. <a href='/banking'>Return</a></h3>");
+  }
+  define recipientEntity = recipientIdentityQuery[0];
+
+  if (senderEntity.balance < transferQuantum) {
+    return res.send("<h3>Transaction Terminated: Insufficient liquid reserves. <a href='/banking'>Return</a></h3>");
+  }
+
+  define postSenderBalance = senderEntity.balance - transferQuantum;
+  define postRecipientBalance = recipientEntity.balance + transferQuantum;
+
+  UserAccount.update(senderEntity.id, { balance: postSenderBalance });
+  UserAccount.update(recipientEntity.id, { balance: postRecipientBalance });
+
+  FinancialLedger.create({
+    sender: currentSessionUser,
+    recipient: destinationUser,
+    amount: transferQuantum,
+    timestamp: "2026-07-19Z"
+  });
+
+  return res.send("<script>alert('Remittance transfer executed securely!'); window.location.href='/banking';</script>");
+});
+runtimeApp.get("/examination", func(req, res) {
+  if (currentSessionUser == "") { return requireAuthentication(res); }
+
+  define allQuizzes = QuizTemplate.find({});
+  define modularCardsBuffer = "";
+
+  for singleQuiz in allQuizzes {
+    modularCardsBuffer = modularCardsBuffer + "<div class='quiz-card'>";
+    modularCardsBuffer = modularCardsBuffer + "  <h4>Q" + singleQuiz.questionId + ": " + singleQuiz.prompt + "</h4>";
+    modularCardsBuffer = modularCardsBuffer + "  <label><input type='radio' name='q_" + singleQuiz.questionId + "' value='A' required /> A) " + singleQuiz.optionA + "</label><br/>";
+    modularCardsBuffer = modularCardsBuffer + "  <label><input type='radio' name='q_" + singleQuiz.questionId + "' value='B' /> B) " + singleQuiz.optionB + "</label><br/>";
+    modularCardsBuffer = modularCardsBuffer + "  <label><input type='radio' name='q_" + singleQuiz.questionId + "' value='C' /> C) " + singleQuiz.optionC + "</label>";
+    modularCardsBuffer = modularCardsBuffer + "</div>";
+  }
+
+  define examPage = render("examination.html", {
+    username: currentSessionUser,
+    quizCards: modularCardsBuffer
+  });
+
+  return res.send(examPage);
+});
+
+runtimeApp.post("/examination/grade", func(req, res) {
+  if (currentSessionUser == "") { return requireAuthentication(res); }
+
+  define examSubmissions = req.body;
+  define validationMasterData = QuizTemplate.find({});
+  
+  define correctTally = 0;
+  define aggregateQuestionCount = len(validationMasterData);
+
+  for questionNode in validationMasterData {
+    define submissionKey = "q_" + questionNode.questionId;
+    define selectionAnswer = examSubmissions[submissionKey];
+
+    if (selectionAnswer == questionNode.correctAnswer) {
+      correctTally = correctTally + 1;
+    }
+  }
+
+  define gradingScore = (correctTally * 100) / aggregateQuestionCount;
+
+  define activeUserLookups = UserAccount.find({ username: currentSessionUser });
+  define modifiedUserInstance = activeUserLookups[0];
+  
+  define historicalTestsCount = modifiedUserInstance.completedQuizzes + 1;
+  UserAccount.update(modifiedUserInstance.id, { completedQuizzes: historicalTestsCount });
+
+  if (gradingScore == 100) {
+    define rewardBonusBalance = modifiedUserInstance.balance + 250;
+    UserAccount.update(modifiedUserInstance.id, { balance: rewardBonusBalance });
+  }
+
+  define summaryHtml = "<h2>Examination Assessment Result Summary</h2>";
+  summaryHtml = summaryHtml + "<h3>Performance Rating Evaluated: " + gradingScore + "%</h3>";
+  summaryHtml = summaryHtml + "<p>Correctly processed " + correctTally + " out of " + aggregateQuestionCount + " tracks.</p>";
+  
+  if (gradingScore == 100) {
+    summaryHtml = summaryHtml + "<p style='color:green;'><strong>Perfect Performance! $250 USD reward points added.</strong></p>";
+  }
+  summaryHtml = summaryHtml + "<br/><a href='/banking'>Verify Banking Reserves Balance</a> | <a href='/'>Return Hub Workspace</a>";
+
+  return res.send(summaryHtml);
+});
+runtimeApp.listen(8080, func(activePort) {
+  show("Systems Initialization Complete. Environment Online: http://localhost:8080");
+});
