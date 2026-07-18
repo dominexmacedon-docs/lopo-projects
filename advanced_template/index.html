@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Central Hub</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        .card { background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        input, button { padding: 8px 12px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h2>System Central Portal</h2>
+    <div class="card">
+        <p>Logged in as authorized agent: <strong>{{currentUser}}</strong> | <a href="/logout">Terminate Session</a></p>
+        <ul>
+            <li><a href="/banking">Secure Vault & Banking System</a></li>
+            <li><a href="/examination">Interactive Evaluation System (Multiple Choice)</a></li>
+        </ul>
+    </div>
+    <div class="card">
+        <h3>Identity Authentication Register</h3>
+        <form action="/auth/process" method="POST">
+            <input type="text" name="user" placeholder="Username" required /><br>
+            <input type="password" name="pass" placeholder="Secret Passphrase" required /><br>
+            <button type="submit" name="action" value="login">Sign In</button>
+            <button type="submit" name="action" value="register">Register Account</button>
+        </form>
+    </div>
+</body>
+</html>

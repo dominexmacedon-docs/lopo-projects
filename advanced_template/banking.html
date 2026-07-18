@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Central Vault Banking</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
+        th { background: #f3f4f6; }
+        .form-group { background: #f9fafb; padding: 20px; border-radius: 6px; border: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <h2>Central Vault Banking Platform</h2>
+    <p>User Session Identity: <strong>{{username}}</strong></p>
+    <h3>Liquid Capital Holdings: ${{balance}} USD</h3>
+    
+    <div class="form-group">
+        <h3>Execute Capital Remittance Transfer</h3>
+        <form action="/banking/transfer" method="POST">
+            <label>Target Beneficiary:</label><br>
+            <input type="text" name="recipient" required /><br><br>
+            <label>Remittance Amount ($):</label><br>
+            <input type="number" name="amount" min="1" required /><br><br>
+            <button type="submit">Finalize Wire Transfer</button>
+        </form>
+    </div>
+    
+    <h3>Audit Log Trail (Global Operations Ledger)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Debited Account</th>
+                <th>Credited Account</th>
+                <th>Quantum Allocation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ledgerRows}}
+        </tbody>
+    </table>
+    
+    <br><br>
+    <a href="/">Return to Main Hub Workspace</a>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Knowledge Matrix</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+        .quiz-card { background: #f3f4f6; padding: 15px; margin-bottom: 15px; border-radius: 6px; }
+        button { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Knowledge Testing & Examination Matrix</h2>
+    <p>Test Taker Key ID: <strong>{{username}}</strong></p>
+    
+    <form action="/examination/grade" method="POST">
+        {{quizCards}}
+        <button type="submit">File Submissions for Assessment</button>
+    </form>
+    
+    <br><br>
+    <a href="/">Return to Main Hub Workspace</a>
+</body>
+</html>
