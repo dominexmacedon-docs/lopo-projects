@@ -1,0 +1,18 @@
+define numbers = [64, 25, 12, 22, 11, 90, 8];
+define totalElements = len(numbers);
+
+show("Original Array: " + str(numbers));
+for (let i = 0; i < totalElements - 1; i++) {
+    define minIndex = i;
+    
+    for (let j = i + 1; j < totalElements; j++) {
+        if (numbers[j] < numbers[minIndex]) {
+            minIndex = j;
+        }
+    }
+    define temp = numbers[minIndex];
+    numbers[minIndex] = numbers[i];
+    numbers[i] = temp;
+}
+
+show("Selection Sorted Array: " + str(numbers));

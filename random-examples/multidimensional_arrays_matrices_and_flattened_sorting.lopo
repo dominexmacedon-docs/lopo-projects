@@ -1,0 +1,32 @@
+define grid = [
+    [45, 12, 89],
+    [3,  67, 21],
+    [78, 34, 5]
+];
+
+define flattened = [];
+
+show("--- Original Matrix Grid ---");
+for (let row = 0; row < len(grid); row++) {
+    define rowString = "";
+    for (let col = 0; col < len(grid[row]); col++) {
+        rowString += str(grid[row][col]) + " ";
+        push(flattened, grid[row][col]);
+    }
+    show(rowString);
+}
+
+show("Flattened array collection total elements: " + str(len(flattened)));
+define n = len(flattened);
+for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+        if (flattened[j] > flattened[j + 1]) {
+            define temp = flattened[j];
+            flattened[j] = flattened[j + 1];
+            flattened[j + 1] = temp;
+        }
+    }
+}
+
+show("--- Globally Sorted Values ---");
+show(str(flattened));

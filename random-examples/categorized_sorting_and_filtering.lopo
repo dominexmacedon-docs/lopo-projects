@@ -1,0 +1,24 @@
+define logCodes = [500, 200, 404, 503, 301, 201, 403, 502];
+
+define serverErrors = [];
+define clientErrors = [];
+define successCodes = [];
+for code in logCodes {
+    if (code >= 500) {
+        push(serverErrors, code);
+    }
+    if (code >= 400 && code < 500) {
+        push(clientErrors, code);
+    }
+    if (code >= 200 && code < 400) {
+        push(successCodes, code);
+    }
+}
+define sortedServer = sort(serverErrors);
+define sortedClient = sort(clientErrors);
+define sortedSuccess = sort(successCodes);
+
+show("--- Categorized & Sorted Operations Logs ---");
+show("Server Critical Issues (Sorted): " + str(sortedServer));
+show("Client Interferences (Sorted): " + str(sortedClient));
+show("Successful Requests (Sorted): " + str(sortedSuccess));

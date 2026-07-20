@@ -1,0 +1,35 @@
+entity CharacterToken {
+    init(charValue, count) {
+        self.charValue = charValue;
+        self.count = count;
+    }
+}
+
+define rawText = ["a", "b", "a", "c", "a", "b", "d"];
+define tokens = [];
+for letter in rawText {
+    define matchFound = false;
+    for token in tokens {
+        if (token.charValue == letter) {
+            token.count++;
+            matchFound = true;
+        }
+    }
+    if (!matchFound) {
+        push(tokens, new CharacterToken(letter, 1));
+    }
+}
+for (let i = 0; i < len(tokens); i++) {
+    for (let j = i + 1; j < len(tokens); j++) {
+        if (tokens[i].count < tokens[j].count) {
+            define tempToken = tokens[i];
+            tokens[i] = tokens[j];
+            tokens[j] = tempToken;
+        }
+    }
+}
+
+show("--- Analytics Character Frequencies ---");
+for token in tokens {
+    show("Character '" + token.charValue + "' mapped total instances: " + str(token.count));
+}

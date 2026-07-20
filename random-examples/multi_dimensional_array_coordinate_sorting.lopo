@@ -1,0 +1,32 @@
+entity Point2D {
+    init(x, y) {
+        self.x = x;
+        self.y = y;
+    }
+}
+
+define coordinates = [
+    new Point2D(5, 5),
+    new Point2D(1, 2),
+    new Point2D(0, 3),
+    new Point2D(8, 2)
+];
+
+show("Sorting coordinate points by relative proximity to origin (0,0)...");
+for (let i = 0; i < len(coordinates); i++) {
+    for (let j = i + 1; j < len(coordinates); j++) {
+        define distA = (coordinates[i].x * coordinates[i].x) + (coordinates[i].y * coordinates[i].y);
+        define distB = (coordinates[j].x * coordinates[j].x) + (coordinates[j].y * coordinates[j].y);
+        
+        if (distA > distB) {
+            define tempPoint = coordinates[i];
+            coordinates[i] = coordinates[j];
+            coordinates[j] = tempPoint;
+        }
+    }
+}
+
+show("--- Coordinates Ordered by Distance ---");
+for pt in coordinates {
+    show("Point coordinates: (" + str(pt.x) + ", " + str(pt.y) + ")");
+}

@@ -1,0 +1,21 @@
+define productNames = ["Laptop", "Mouse", "Keyboard", "Monitor"];
+define productSales = [450, 1200, 850, 310];
+
+show("Initial datasets loaded.");
+for (let i = 0; i < len(productSales); i++) {
+    for (let j = i + 1; j < len(productSales); j++) {
+        if (productSales[i] > productSales[j]) {
+            define tempSales = productSales[i];
+            productSales[i] = productSales[j];
+            productSales[j] = tempSales;
+            define tempName = productNames[i];
+            productNames[i] = productNames[j];
+            productNames[j] = tempName;
+        }
+    }
+}
+
+show("--- Sales Performance Metrics ---");
+for (let idx = 0; idx < len(productNames); idx++) {
+    show(productNames[idx] + " units sold: " + str(productSales[idx]));
+}

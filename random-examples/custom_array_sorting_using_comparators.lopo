@@ -1,0 +1,42 @@
+entity LeaderboardUser {
+    init(username, score) {
+        self.username = username;
+        self.score = score;
+    }
+}
+define users = [
+    new LeaderboardUser("Alice", 95),
+    new LeaderboardUser("Bob", 80),
+    new LeaderboardUser("Charlie", 95),
+    new LeaderboardUser("David", 60)
+];
+
+show("--- Unsorted Leaderboard ---");
+for user in users {
+    show(user.username + ": " + str(user.score));
+}
+for (let i = 0; i < len(users); i++) {
+    for (let j = i + 1; j < len(users); j++) {
+        define itemA = users[i];
+        define itemB = users[j];
+        define shouldSwap = false;
+        
+        if (itemA.score < itemB.score) {
+            shouldSwap = true;
+        } 
+        if (itemA.score == itemB.score && itemA.username > itemB.username) {
+            shouldSwap = true;
+        }
+
+        if (shouldSwap) {
+            define temp = users[i];
+            users[i] = users[j];
+            users[j] = temp;
+        }
+    }
+}
+
+show("--- Sorted Leaderboard (Highest Score First) ---");
+for user in users {
+    show(user.username + ": " + str(user.score));
+}

@@ -1,0 +1,15 @@
+define randomWords = ["zebra", "Apple", "monkey", "Banana", "cherry"];
+define totalWords = len(randomWords);
+
+show("Original Array: " + str(randomWords));
+for (let i = 0; i < totalWords - 1; i++) {
+    for (let j = 0; j < totalWords - i - 1; j++) {
+        if (lower(randomWords[j]) > lower(randomWords[j + 1])) {
+            define tempWord = randomWords[j];
+            randomWords[j] = randomWords[j + 1];
+            randomWords[j + 1] = tempWord;
+        }
+    }
+}
+
+show("Alphabetical Sorted Array: " + str(randomWords));

@@ -1,0 +1,23 @@
+define stockPrices = [150, 45, 200, 99, 350, 80, 500, 120];
+define premiumStocks = [];
+for price in stockPrices {
+    if (price >= 100) {
+        push(premiumStocks, price);
+    }
+}
+define sortedAscending = sort(premiumStocks);
+show("Filtered & Ascending: " + str(sortedAscending));
+define left = 0;
+define right = len(sortedAscending) - 1;
+
+for (let k = 0; k < len(sortedAscending); k++) {
+    if (left < right) {
+        define tempPrice = sortedAscending[left];
+        sortedAscending[left] = sortedAscending[right];
+        sortedAscending[right] = tempPrice;
+        left++;
+        right--;
+    }
+}
+
+show("Filtered & Descending: " + str(sortedAscending));

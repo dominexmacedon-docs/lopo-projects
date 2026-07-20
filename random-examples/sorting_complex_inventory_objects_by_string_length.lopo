@@ -1,0 +1,27 @@
+entity EquipmentItem {
+    init(sku, placementCode) {
+        self.sku = sku;
+        self.placementCode = placementCode;
+    }
+}
+
+define warehouseStock = [
+    new EquipmentItem("Generator-HeavyDuty", "A1"),
+    new EquipmentItem("Nut", "C4"),
+    new EquipmentItem("Drill-Cordless", "B2"),
+    new EquipmentItem("Wrench", "B1")
+];
+for (let i = 0; i < len(warehouseStock); i++) {
+    for (let j = i + 1; j < len(warehouseStock); j++) {
+        if (len(warehouseStock[i].sku) < len(warehouseStock[j].sku)) {
+            define tempItem = warehouseStock[i];
+            warehouseStock[i] = warehouseStock[j];
+            warehouseStock[j] = tempItem;
+        }
+    }
+}
+
+show("--- Inventory Sorted by SKU Identifier Length ---");
+for item in warehouseStock {
+    show("SKU: " + item.sku + " | Bin: " + item.placementCode);
+}
